@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.env
+tmp/
+data/*.pdf
+data/*.sqlite*
