@@ -4,3 +4,12 @@ __pycache__/
 tmp/
 data/*.pdf
 data/*.sqlite*
+data/manuals.local.json
+data/manual-index.local.json
+data/manual-import-report.local.json
+data/manual-cache/
+*.pem
+*.key
+models/
+data/vision-classes.local.json
+runs/

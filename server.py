@@ -4,6 +4,8 @@ import math
 import os
 import re
 import urllib.request
+from urllib.parse import urlparse, parse_qs
+import maintenance
 from collections import Counter
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -32,7 +34,15 @@ def search(question):
             scores.append((score, page))
     return [p for _, p in sorted(scores, key=lambda x:x[0], reverse=True)[:3]]
 
-def answer(question, history=None):
+def answer(question, history=None, part_id=None):
+    manual = maintenance.answer_manual(question, part_id)
+    if not manual and history and re.search(r'그것|그럼|자세히|더 알려|이 부분', question):
+        previous = next((m['content'] for m in reversed(history) if m.get('role') == 'user'), '')
+        previous_part = maintenance.infer_part(previous)
+        if previous_part:
+            manual = maintenance.answer_manual(question, previous_part['id'])
+    if manual:
+        return manual
     if re.fullmatch(r'(안녕|안녕하세요|반가워|안녕하십니까)[!?.~\s]*', question):
         return {'answer':'안녕하세요. 군학연계 AI 정비관리 제안서의 기능, 데이터, 시스템 구조와 개발 일정을 찾아드립니다. 무엇이 궁금하신가요?', 'sources':[], 'mode':'document'}
     # Very short follow-up questions can refer back to the last user topic.
@@ -80,12 +90,34 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(raw)
 
     def do_GET(self):
-        path = self.path.split('?')[0]
+        parsed = urlparse(self.path)
+        path = parsed.path
+        params = parse_qs(parsed.query)
+        if path == '/api/parts':
+            info=maintenance.vision.status(maintenance.VISION_MODEL)
+            return self.send(200, {'parts':maintenance.PARTS,'indexedPages':len(maintenance.RECORDS),'visionConfigured':info['configured'],'vision':info})
+        if path == '/api/manuals':
+            return self.send(200, maintenance.public_manuals())
+        if path == '/api/part':
+            part = maintenance.find_part(params.get('id',[''])[0])
+            return self.send(200,maintenance.part_detail(part)) if part else self.send(404,{'error':'등록되지 않은 부품입니다.'})
+        if path == '/manual-page':
+            try:
+                return self.send(200,maintenance.render_page(params.get('doc',[''])[0],int(params.get('page',['0'])[0])),'image/png')
+            except (ValueError,TypeError):
+                return self.send(404,{'error':'페이지를 찾을 수 없습니다.'})
+            except ImportError:
+                return self.send(503,{'error':'원문 렌더링에는 requirements.txt 패키지가 필요합니다.'})
+        if path == '/document' and 'doc' in params:
+            doc = next((d for d in maintenance.MANUALS if d['id']==params['doc'][0]),None)
+            if not doc or not Path(doc['path']).is_file():
+                return self.send(404,{'error':'로컬 원본을 찾을 수 없습니다.'})
+            return self.send(200,Path(doc['path']).read_bytes(),'application/pdf')
         if path == '/api/status':
             return self.send(200, {'pages':len(PAGES),'model':MODEL or None,'document':SOURCE_NAME, 'pdfAvailable':(ROOT/'data/source.pdf').exists()})
         if path == '/api/pages':
             return self.send(200, PAGES)
-        files = {'/':('web/index.html','text/html; charset=utf-8'),'/app.js':('web/app.js','text/javascript; charset=utf-8'),'/style.css':('web/style.css','text/css; charset=utf-8'),'/document':('data/source.pdf','application/pdf')}
+        files = {'/':('web/index.html','text/html; charset=utf-8'),'/style.css':('web/style.css','text/css; charset=utf-8'),'/app.js':('web/app.js','text/javascript; charset=utf-8'),'/live-core.js':('web/live-core.js','text/javascript; charset=utf-8'),'/camera.js':('web/camera.js','text/javascript; charset=utf-8'),'/camera.css':('web/camera.css','text/css; charset=utf-8'),'/document':('data/source.pdf','application/pdf')}
         if path not in files:
             return self.send(404, {'error':'찾을 수 없습니다.'})
         filename, mime = files[path]
@@ -95,7 +127,7 @@ class Handler(BaseHTTPRequestHandler):
         return self.send(200,file.read_bytes(),mime)
 
     def do_POST(self):
-        if self.path != '/api/chat':
+        if self.path not in ('/api/chat','/api/identify'):
             return self.send(404, {'error':'찾을 수 없습니다.'})
         # Only same-origin browser writes are accepted; never enable wildcard CORS.
         origin = self.headers.get('Origin')
@@ -103,16 +135,23 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(403, {'error':'허용되지 않은 요청입니다.'})
         try:
             length = int(self.headers.get('Content-Length','0'))
-            if not 0 < length <= 24000:
+            maximum = 3000000 if self.path == '/api/identify' else 24000
+            if not 0 < length <= maximum:
                 return self.send(413, {'error':'요청이 너무 큽니다.'})
             data = json.loads(self.rfile.read(length))
+            if self.path == '/api/identify':
+                code, result = maintenance.identify(data.get('image'))
+                return self.send(code,result)
             question = data.get('question')
             if not isinstance(question,str) or not 1 <= len(question.strip()) <= 2000:
                 return self.send(400, {'error':'질문을 1~2,000자로 입력해 주세요.'})
             history = data.get('history',[])
             if not isinstance(history,list) or len(history)>12 or any(not isinstance(m,dict) or m.get('role') not in ('user','assistant') or not isinstance(m.get('content'),str) or len(m['content'])>4000 for m in history):
                 return self.send(400, {'error':'대화 형식이 올바르지 않습니다.'})
-            return self.send(200, answer(question.strip(),history))
+            part_id = data.get('partId')
+            if part_id is not None and (not isinstance(part_id,str) or not maintenance.find_part(part_id)):
+                return self.send(400,{'error':'등록되지 않은 부품입니다.'})
+            return self.send(200, answer(question.strip(),history,part_id))
         except (ValueError,TypeError,AttributeError):
             return self.send(400, {'error':'요청 형식을 확인해 주세요.'})
 

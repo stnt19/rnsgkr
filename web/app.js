@@ -8,10 +8,14 @@ function panel(library) {
   $('sectionTitle').textContent = library ? '참고 문서' : '정비 지식 챗봇';
 }
 function showSource(source) {
-  $('sourceTitle').textContent = `${source.page}쪽 · ${source.title}`;
+  $('sourceTitle').textContent = `${source.document || '개발 제안서'} · PDF ${source.page}쪽 · ${source.title}`;
   $('sourceText').textContent = source.text;
-  $('sourceLink').hidden = !pdfAvailable;
-  $('sourceLink').href = `/document#page=${source.page}`;
+  let image = $('sourceImage');
+  if(!image) { image = document.createElement('img'); image.id = 'sourceImage'; image.alt = '출처 원문 페이지'; image.style.cssText = 'width:100%;height:auto;display:block;margin:15px 0'; $('sourceText').after(image); }
+  image.hidden = !source.imageUrl;
+  if(source.imageUrl) { image.src = source.imageUrl; image.onerror = () => { image.hidden = true; }; }
+  $('sourceLink').hidden = !source.url && !pdfAvailable;
+  $('sourceLink').href = source.url || `/document#page=${source.page}`;
   $('sourceDialog').showModal();
 }
 function addMessage(role, text, sources = [], notice = null) {
@@ -20,8 +24,9 @@ function addMessage(role, text, sources = [], notice = null) {
   article.append(node('div',text,'bubble'));
   if(sources.length) {
     const group = node('div','','sources');
-    sources.forEach(s => { const btn = node('button',`${s.page}쪽 · ${s.title} ↗`,'source-chip'); btn.onclick = () => showSource(s); group.append(btn); });
-    article.append(group);
+    sources.forEach(s => { const btn = node('button',`${s.kind === 'manual' ? '정비교범 · PDF ' : ''}${s.page}쪽 · ${s.title} ↗`,'source-chip'); btn.onclick = () => showSource(s); group.append(btn); });
+    if(sources.some(s=>s.kind==='manual')) article.insertBefore(group,article.querySelector('.bubble'));
+    else article.append(group);
   }
   if(notice) article.append(node('div',notice,'notice'));
   $('conversation').append(article);
@@ -37,7 +42,7 @@ async function ask(question) {
     const data = await response.json(); if(!response.ok) throw new Error(data.error || '답변 요청에 실패했습니다.');
     pending.remove(); addMessage('assistant',data.answer,data.sources,data.notice);
     history.push({role:'user',content:question},{role:'assistant',content:data.answer.slice(0,4000)});
-    $('mode').textContent = data.mode === 'local-model' ? '로컬 AI 모델 · 문서 검색 기반' : '문서 발췌 모드 · API 키 없이 실행';
+    $('mode').textContent = data.mode === 'manual' ? '정비교범 원문 발췌 · 사진 진단 결과 아님' : data.mode === 'local-model' ? '로컬 AI 모델 · 문서 검색 기반' : '제안서 발췌 모드 · API 키 없이 실행';
   } catch(error) { pending.remove(); addMessage('assistant',`답변을 가져오지 못했습니다. ${error.name === 'TimeoutError' ? '응답 시간이 초과되었습니다.' : error.message} 다시 질문해 주세요.`); }
   finally { busy = false; $('send').disabled = false; $('reset').disabled = false; $('question').focus(); }
 }
