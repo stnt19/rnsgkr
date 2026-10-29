@@ -92,10 +92,24 @@ $('reset').onclick = () => { history = []; $('conversation').replaceChildren(wel
 $('closeDialog').onclick = () => $('sourceDialog').close();
 async function init() {
   try {
-    const [status,pages] = await Promise.all([fetch('/api/status').then(r=>r.json()),fetch('/api/pages').then(r=>r.json())]);
+    const [status,pages,parts,manuals] = await Promise.all([fetch('/api/status').then(r=>r.json()),fetch('/api/pages').then(r=>r.json()),fetch('/api/parts').then(r=>r.json()),fetch('/api/manuals').then(r=>r.json())]);
     pdfAvailable = status.pdfAvailable;
     if(status.model) $('mode').textContent = `로컬 AI 모델 설정 · ${status.model}`;
     pages.forEach(p => { const card = node('article','','page-card'); card.append(node('h2',`${String(p.page).padStart(2,'0')} / ${p.title}`),node('p',p.text)); const btn = node('button','출처 확인 ↗','text-button'); btn.onclick = () => showSource(p); card.append(btn); $('pageList').append(card); });
+    const heading=node('h2','렉스턴 스포츠 2023 · 정비교범','manual-library-title');
+    const list=node('div','','manual-docs');manuals.forEach(d=>{const card=node('article','','manual-doc');card.append(node('strong',`${d.title} · ${d.pages.toLocaleString()}쪽`),node('p',d.scope));if(d.available){const link=node('a','원본 PDF 열기 ↗');link.href='/document?doc='+encodeURIComponent(d.id);link.target='_blank';link.rel='noopener';card.append(link);}list.append(card);});
+    $('pageList').before(heading,list,node('h2','프로젝트 개발 제안서','manual-library-title'));
+    document.querySelector('.badge').textContent='렉스턴 스포츠 2023 · 교범 기반';
+    document.querySelector('.document-strip strong').textContent='렉스턴 스포츠 2023 정비교범 · 군학연계 개발 제안서';
+    document.querySelector('.document-strip div > span').textContent=`차량 교범 ${manuals.length}개 · 선별 ${parts.indexedPages}쪽 · 대상 부품 ${parts.parts.length}종`;
+    document.querySelector('.welcome p').textContent='부품명과 증상을 입력하면 설명·사진·점검 및 정비 방법을 정리해 드립니다.';
+    document.querySelector('.scope-note').textContent='ⓘ 차량 사양과 정비교범의 원문·주의사항을 확인하세요. 증상만으로 고장을 확정하지 않습니다.';
+    document.querySelector('#libraryPanel > p').textContent='정비 안내에 사용하는 교범과 개발 제안서입니다. 답변의 사진과 원문 버튼에서 근거를 확인할 수 있습니다.';
+    $('question').placeholder='부품명과 증상을 입력해 주세요. 예: 배터리 점검 방법';
+    if(!status.model)$('mode').textContent='교범 기반 질문·답변 · API 키 없이 실행';
+    const examples=[['배터리 점검 방법을 알려 주세요','01 / 충전 계통','배터리 점검 방법'],['에어컨 필터 교환 방법을 알려 주세요','02 / 필터 교환','에어컨 필터 교환'],['헤드램프에 결로가 계속 생겨요','03 / 램프 정비','헤드 램프 결로 확인'],['스타팅 모터 점검 방법을 알려 주세요','04 / 시동 계통','시동 모터 점검']];
+    document.querySelectorAll('.prompt-grid button').forEach((b,i)=>{b.dataset.question=examples[i][0];b.querySelector('span').textContent=examples[i][1];b.querySelector('strong').textContent=examples[i][2];});
+    document.querySelectorAll('.side-prompt').forEach((b,i)=>{b.dataset.question=examples[i][0];b.replaceChildren(node('span','↗'));b.prepend(document.createTextNode(examples[i][2]+' '));});
   } catch { $('mode').textContent = '서버 연결을 확인해 주세요.'; }
 }
 init();

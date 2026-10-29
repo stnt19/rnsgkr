@@ -94,8 +94,7 @@ class Handler(BaseHTTPRequestHandler):
         path = parsed.path
         params = parse_qs(parsed.query)
         if path == '/api/parts':
-            info=maintenance.vision.status(maintenance.VISION_MODEL)
-            return self.send(200, {'parts':maintenance.PARTS,'indexedPages':len(maintenance.RECORDS),'visionConfigured':info['configured'],'vision':info})
+            return self.send(200, {'parts':maintenance.PARTS,'indexedPages':len(maintenance.RECORDS)})
         if path == '/api/manuals':
             return self.send(200, maintenance.public_manuals())
         if path == '/api/part':
@@ -124,7 +123,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, {'pages':len(PAGES),'model':MODEL or None,'document':SOURCE_NAME, 'pdfAvailable':(ROOT/'data/source.pdf').exists()})
         if path == '/api/pages':
             return self.send(200, PAGES)
-        files = {'/':('web/index.html','text/html; charset=utf-8'),'/style.css':('web/style.css','text/css; charset=utf-8'),'/app.js':('web/app.js','text/javascript; charset=utf-8'),'/live-core.js':('web/live-core.js','text/javascript; charset=utf-8'),'/camera.js':('web/camera.js','text/javascript; charset=utf-8'),'/camera.css':('web/camera.css','text/css; charset=utf-8'),'/document':('data/source.pdf','application/pdf')}
+        files = {'/':('web/index.html','text/html; charset=utf-8'),'/style.css':('web/style.css','text/css; charset=utf-8'),'/app.js':('web/app.js','text/javascript; charset=utf-8'),'/guides.css':('web/guides.css','text/css; charset=utf-8'),'/document':('data/source.pdf','application/pdf')}
         if path not in files:
             return self.send(404, {'error':'찾을 수 없습니다.'})
         filename, mime = files[path]
@@ -134,7 +133,7 @@ class Handler(BaseHTTPRequestHandler):
         return self.send(200,file.read_bytes(),mime)
 
     def do_POST(self):
-        if self.path not in ('/api/chat','/api/identify'):
+        if self.path != '/api/chat':
             return self.send(404, {'error':'찾을 수 없습니다.'})
         # Only same-origin browser writes are accepted; never enable wildcard CORS.
         origin = self.headers.get('Origin')
@@ -142,13 +141,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(403, {'error':'허용되지 않은 요청입니다.'})
         try:
             length = int(self.headers.get('Content-Length','0'))
-            maximum = 3000000 if self.path == '/api/identify' else 24000
-            if not 0 < length <= maximum:
+            if not 0 < length <= 24000:
                 return self.send(413, {'error':'요청이 너무 큽니다.'})
             data = json.loads(self.rfile.read(length))
-            if self.path == '/api/identify':
-                code, result = maintenance.identify(data.get('image'))
-                return self.send(code,result)
             question = data.get('question')
             if not isinstance(question,str) or not 1 <= len(question.strip()) <= 2000:
                 return self.send(400, {'error':'질문을 1~2,000자로 입력해 주세요.'})

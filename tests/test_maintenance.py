@@ -1,15 +1,28 @@
-import base64
 import io
 import json
 import unittest
 from types import SimpleNamespace
-from unittest.mock import patch
 import maintenance
 from server import answer, Handler
 
 class MaintenanceTests(unittest.TestCase):
+    def test_camera_assets_and_recognition_endpoint_are_removed(self):
+        for path in ['/camera.js','/live-core.js','/camera.css']:
+            handler=Handler.__new__(Handler);handler.path=path;sent=[]
+            handler.send=lambda code,data,mime='':sent.append(code)
+            handler.do_GET();self.assertEqual(sent,[404])
+        handler=Handler.__new__(Handler);handler.path='/api/identify';sent=[]
+        handler.send=lambda code,data,mime='':sent.append(code)
+        handler.do_POST();self.assertEqual(sent,[404])
+
+    def test_parts_metadata_has_no_vision_configuration(self):
+        handler=Handler.__new__(Handler);handler.path='/api/parts';sent=[]
+        handler.send=lambda code,data,mime='':sent.append(data)
+        handler.do_GET()
+        self.assertIn('parts',sent[0]);self.assertNotIn('vision',sent[0]);self.assertNotIn('visionConfigured',sent[0])
+
     def test_all_static_assets_are_served(self):
-        for path in ['/','/style.css','/camera.css','/app.js','/live-core.js','/camera.js']:
+        for path in ['/','/style.css','/guides.css','/app.js']:
             with self.subTest(path=path):
                 handler=Handler.__new__(Handler);handler.path=path
                 sent=[];handler.send=lambda code,data,mime='':sent.append((code,data,mime))
@@ -39,34 +52,6 @@ class MaintenanceTests(unittest.TestCase):
 
     def test_public_registry_hides_local_paths(self):
         self.assertTrue(all('path' not in d and 'sha256' not in d for d in maintenance.public_manuals()))
-
-    def test_model_missing_is_explicit(self):
-        with patch.object(maintenance,'VISION_MODEL',''):
-            code,result=maintenance.identify('not an image')
-        self.assertEqual(code,503)
-        self.assertEqual(result['candidates'],[])
-
-    def test_invalid_image_is_rejected(self):
-        with patch.object(maintenance,'VISION_MODEL','local-vision'):
-            code,_=maintenance.identify(base64.b64encode(b'not an image').decode())
-        self.assertEqual(code,400)
-
-    def test_cloud_model_is_rejected(self):
-        with patch.object(maintenance,'VISION_MODEL','vision:cloud'):
-            code,_=maintenance.identify('abc')
-        self.assertEqual(code,400)
-
-    def test_vision_candidates_are_allowlisted_and_not_confirmed(self):
-        from PIL import Image
-        stream=io.BytesIO();Image.new('RGB',(8,8)).save(stream,format='JPEG')
-        image=base64.b64encode(stream.getvalue()).decode()
-        content={'candidates':[{'id':'battery','reason':'직육면체 외형'},{'id':'made-up','reason':'fake'}]}
-        response=io.BytesIO(json.dumps({'message':{'content':json.dumps(content)}}).encode())
-        with patch.object(maintenance,'VISION_MODEL','local-vision'),patch('maintenance.urllib.request.urlopen',return_value=response):
-            code,result=maintenance.identify(image)
-        self.assertEqual(code,200)
-        self.assertEqual([c['id'] for c in result['candidates']],['battery'])
-        self.assertTrue(result['needsConfirmation'])
 
 @unittest.skipUnless(maintenance.RECORDS,'Requires local manual import')
 class LocalManualTests(unittest.TestCase):
