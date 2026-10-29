@@ -162,7 +162,7 @@ async function askPart(question,id){
   const pending=node('div','해당 부품의 정비교범을 검색하고 있습니다…','pending');$('conversation').append(pending);
   try{
     const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question,partId:id,history:[]}),signal:AbortSignal.timeout(15000)});
-    const data=await res.json();if(!res.ok)throw new Error(data.error);pending.remove();addMessage('assistant',data.answer,data.sources,data.notice);$('mode').textContent='정비교범 원문 발췌 · 영상 진단 결과 아님';
+    const data=await res.json();if(!res.ok)throw new Error(data.error);pending.remove();addMessage('assistant',data.answer,data.sources,data.notice,data.guide);$('mode').textContent='교범 기반 정리 안내 · 출처·그림 포함';
     // Keep the explicit part name in history for later manual-topic retrieval.
     history.push({role:'user',content:part.name+' '+question},{role:'assistant',content:data.answer.slice(0,4000)});
   }catch(error){pending.remove();addMessage('assistant','정비자료 검색에 실패했습니다. '+error.message);}

@@ -18,11 +18,48 @@ function showSource(source) {
   $('sourceLink').href = source.url || `/document#page=${source.page}`;
   $('sourceDialog').showModal();
 }
-function addMessage(role, text, sources = [], notice = null) {
+function guideRef(source){
+  const button=node('button',`원문 ${source.page}쪽`,'guide-ref');
+  button.onclick=()=>showSource(source);return button;
+}
+function renderGuide(guide,sources){
+  const root=node('div','','service-guide');const byId=new Map(sources.map(s=>[s.id,s]));
+  const header=node('div','','guide-heading');header.append(node('span','REXTON SPORTS 2023','guide-kicker'),node('h2',guide.title),node('p',guide.subtitle));root.append(header);
+  if(guide.question)root.append(node('p','입력한 내용: '+guide.question,'guide-question'));
+  function addClaim(container,claim,tag='p'){
+    const item=node(tag);item.append(node('span',claim.text));
+    const refs=node('span','','guide-refs');(claim.refs||[]).forEach(id=>{if(byId.has(id))refs.append(guideRef(byId.get(id)));});item.append(refs);container.append(item);
+  }
+  function addFigures(placement){
+    guide.figures.filter(f=>f.placement===placement).forEach(f=>{
+      const record=byId.get(f.ref);if(!record)return;
+      const figure=node('figure','','guide-figure'),button=node('button','','guide-image-button');
+      button.setAttribute('aria-label',f.caption+' 원문 크게 보기');button.onclick=()=>showSource(record);
+      const image=node('img');image.alt=f.caption;image.src=f.src;image.loading='lazy';image.decoding='async';
+      image.onerror=()=>{button.replaceChildren(node('span','그림을 불러오지 못했습니다. 눌러 원문을 확인하세요.','guide-image-error'));};
+      button.append(image);const caption=node('figcaption',f.caption+' · 교범 사진/도해 일부');caption.append(guideRef(record));figure.append(button,caption);root.append(figure);
+    });
+  }
+  addClaim(root,guide.description);addFigures('description');
+  for(const section of guide.sections){
+    if(section.id==='steps'&&guide.warnings?.length){const caution=node('section','','guide-caution');caution.append(node('h3','작업 전 주의사항'));const list=node('ul');guide.warnings.forEach(c=>addClaim(list,c,'li'));caution.append(list);root.append(caution);}
+    const block=node('section','','guide-section');block.append(node('h3',section.title));
+    if(section.id==='steps')block.append(node('p','점검 후 해당 작업이 필요하다고 확인된 경우에 참고하는 개요입니다. 전체 절차는 원문에서 확인하세요.','guide-section-note'));
+    const list=node(section.ordered?'ol':'ul');section.items.forEach(c=>addClaim(list,c,'li'));block.append(list);root.append(block);addFigures(section.id);
+  }
+  if(guide.followUp?.length){const block=node('section','','guide-followup');block.append(node('h3','추가로 확인하면 좋은 정보'));const list=node('ul');guide.followUp.forEach(q=>list.append(node('li',q)));block.append(list);root.append(block);}
+  root.append(node('p',guide.scope,'guide-scope'));
+  const details=node('details','','guide-originals');details.append(node('summary',`근거 원문 전체 보기 · ${sources.length}쪽`));
+  const refs=node('div','','sources');sources.forEach(s=>{const button=node('button',`${s.document} · PDF ${s.page}쪽`,'source-chip');button.onclick=()=>showSource(s);refs.append(button);});details.append(refs);root.append(details);
+  return root;
+}
+function addMessage(role, text, sources = [], notice = null, guide = null) {
   const article = node('article', '', `message ${role}`);
   if(role === 'assistant') article.append(node('div','✳ 정비온','author'));
-  article.append(node('div',text,'bubble'));
-  if(sources.length) {
+  const bubble=node('div',guide?'':text,'bubble');
+  if(guide){bubble.classList.add('guide-bubble');bubble.append(renderGuide(guide,sources));}
+  article.append(bubble);
+  if(sources.length&&!guide) {
     const group = node('div','','sources');
     sources.forEach(s => { const btn = node('button',`${s.kind === 'manual' ? '정비교범 · PDF ' : ''}${s.page}쪽 · ${s.title} ↗`,'source-chip'); btn.onclick = () => showSource(s); group.append(btn); });
     if(sources.some(s=>s.kind==='manual')) article.insertBefore(group,article.querySelector('.bubble'));
@@ -40,9 +77,9 @@ async function ask(question) {
   try {
     const response = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question,history:history.slice(-6)}),signal:AbortSignal.timeout(55000)});
     const data = await response.json(); if(!response.ok) throw new Error(data.error || '답변 요청에 실패했습니다.');
-    pending.remove(); addMessage('assistant',data.answer,data.sources,data.notice);
+    pending.remove(); addMessage('assistant',data.answer,data.sources,data.notice,data.guide);
     history.push({role:'user',content:question},{role:'assistant',content:data.answer.slice(0,4000)});
-    $('mode').textContent = data.mode === 'manual' ? '정비교범 원문 발췌 · 사진 진단 결과 아님' : data.mode === 'local-model' ? '로컬 AI 모델 · 문서 검색 기반' : '제안서 발췌 모드 · API 키 없이 실행';
+    $('mode').textContent = data.mode === 'manual' ? '교범 기반 정리 안내 · 출처·그림 포함' : data.mode === 'local-model' ? '로컬 AI 모델 · 문서 검색 기반' : '제안서 발췌 모드 · API 키 없이 실행';
   } catch(error) { pending.remove(); addMessage('assistant',`답변을 가져오지 못했습니다. ${error.name === 'TimeoutError' ? '응답 시간이 초과되었습니다.' : error.message} 다시 질문해 주세요.`); }
   finally { busy = false; $('send').disabled = false; $('reset').disabled = false; $('question').focus(); }
 }

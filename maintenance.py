@@ -8,6 +8,8 @@ import re
 import threading
 import urllib.request
 import vision
+import service_guides
+from functools import lru_cache
 from collections import Counter
 from pathlib import Path
 
@@ -44,7 +46,7 @@ def infer_part(question):
 
 def source(record):
     doc=next(d for d in MANUALS if d['id']==record['docId'])
-    return {**record,'title':doc['title']+' · '+(record.get('printedPage') or str(record['page'])),
+    return {**record,'id':f"{record['docId']}:{record['page']}",'title':doc['title']+' · '+(record.get('printedPage') or str(record['page'])),
             'url':f"/document?doc={record['docId']}#page={record['page']}",
             'imageUrl':f"/manual-page?doc={record['docId']}&page={record['page']}"}
 
@@ -66,6 +68,11 @@ def answer_manual(question,part_id=None):
     pool=[(r,d) for r,d in zip(RECORDS,INDEX) if part['id'] in r['partIds']]
     if not pool:
         return {'answer':f"{part['name']}의 로컬 정비자료가 아직 색인되지 않았습니다. 자료 가져오기를 실행해 주세요.",'sources':[],'mode':'manual','partId':part['id']}
+    prepared=service_guides.build_guide(part,question,RECORDS,MANUALS)
+    if prepared:
+        guide,plain,used=prepared
+        return {'answer':plain,'guide':guide,'presentation':'service-guide','sources':[source(r) for r in used],
+                'mode':'manual','partId':part['id'],'notice':'차량 사양과 정비 전후 작업은 원문에서 확인하세요. 사진·증상만으로 고장을 확정하지 않습니다.'}
     query=set(words(question))
     scored=[]
     for r,doc in pool:
@@ -75,12 +82,29 @@ def answer_manual(question,part_id=None):
         if re.search(r'위치|구성|무엇|설명|정보',question) and r['page']==part['overview']: score+=12
         scored.append((score,r))
     chosen=sorted([r for _,r in sorted(scored,key=lambda v:v[0],reverse=True)[:3]],key=lambda r:r['page'])
-    snippets='\n\n'.join(f"[{next(d['title'] for d in MANUALS if d['id']==r['docId'])} · PDF {r['page']}쪽 / 인쇄 {r.get('printedPage') or '미확인'}]\n{r['text']}" for r in chosen)
-    note=('아래는 선택한 부품과 관련된 교범 원문 발췌입니다. 사진으로 고장을 확정한 결과가 아닙니다. '
-          '표·회로·그림과 작업 순서는 출처의 원문 이미지에서 확인해 주세요.\n\n')
-    questions='\n\n증상 확인 질문\n'+'\n'.join('• '+q for q in part['questions'])
-    return {'answer':part['name']+' · 정비자료\n'+note+snippets+questions,'sources':[source(r) for r in chosen],
-            'mode':'manual','partId':part['id'],'notice':'SGN은 교범의 작업 식별 코드이며 주문 품번이 아닙니다. 적용 사양·주의사항·연속 페이지를 함께 확인하세요.'}
+    return {'answer':part['name']+'의 현재 교범 버전에 맞는 정리된 안내를 제공할 수 없습니다. 자료 버전과 요약의 출처를 확인해 주세요. 아래 원문 링크에서 관련 페이지를 열 수 있습니다.',
+            'sources':[source(r) for r in chosen],'mode':'manual','partId':part['id'],
+            'notice':'검토한 교범 버전 또는 연결 페이지가 바뀌면 정리된 안내를 다시 검증해야 합니다.'}
+
+@lru_cache(maxsize=32)
+def render_figure(part_id,figure_id):
+    part=find_part(part_id)
+    fig=service_guides.figure_spec(part_id,figure_id)
+    if not part or not fig:
+        raise ValueError('등록되지 않은 그림입니다.')
+    doc=next((d for d in MANUALS if d['id']==part['docId']),None)
+    if not doc or doc.get('sha256')!=service_guides.DATA['sourceHashes'].get(part['docId']):
+        raise ValueError('그림의 교범 버전이 맞지 않습니다.')
+    if not any(r['docId']==part['docId'] and r['page']==fig['page'] for r in RECORDS):
+        raise ValueError('색인되지 않은 그림입니다.')
+    from PIL import Image
+    with Image.open(io.BytesIO(render_page(part['docId'],fig['page']))) as image:
+        left,top,right,bottom=fig['crop']
+        if not 0<=left<right<=1 or not 0<=top<bottom<=1:
+            raise ValueError('잘못된 그림 범위입니다.')
+        cropped=image.crop((round(left*image.width),round(top*image.height),round(right*image.width),round(bottom*image.height)))
+        output=io.BytesIO();cropped.save(output,format='PNG');cropped.close()
+        return output.getvalue()
 
 def render_page(doc_id,number):
     doc=next((d for d in MANUALS if d['id']==doc_id),None)

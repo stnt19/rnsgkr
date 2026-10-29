@@ -101,6 +101,13 @@ class Handler(BaseHTTPRequestHandler):
         if path == '/api/part':
             part = maintenance.find_part(params.get('id',[''])[0])
             return self.send(200,maintenance.part_detail(part)) if part else self.send(404,{'error':'등록되지 않은 부품입니다.'})
+        if path == '/manual-figure':
+            try:
+                return self.send(200,maintenance.render_figure(params.get('part',[''])[0],params.get('figure',[''])[0]),'image/png')
+            except (ValueError,TypeError):
+                return self.send(404,{'error':'해당 교범 그림을 사용할 수 없습니다. 원문 페이지를 확인해 주세요.'})
+            except (ImportError,OSError):
+                return self.send(503,{'error':'그림을 불러오지 못했습니다. 로컬 원본과 패키지를 확인해 주세요.'})
         if path == '/manual-page':
             try:
                 return self.send(200,maintenance.render_page(params.get('doc',[''])[0],int(params.get('page',['0'])[0])),'image/png')

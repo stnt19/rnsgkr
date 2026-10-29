@@ -82,7 +82,8 @@ class LocalManualTests(unittest.TestCase):
         result=answer('위치와 탈거 장착 정보를 보여 주세요',part_id='cabin-filter')
         self.assertEqual(result['mode'],'manual')
         self.assertTrue(all(s['docId']=='body-hvac' and 771<=s['page']<=773 for s in result['sources']))
-        self.assertIn('사진으로 고장을 확정한 결과가 아닙니다',result['answer'])
+        self.assertEqual(result['presentation'],'service-guide')
+        self.assertIn('장착 방향',result['answer'])
 
     def test_table_keeps_image_reference(self):
         result=answer('배터리 점검')
