@@ -5,26 +5,47 @@ import re
 from urllib.parse import urlparse, parse_qs
 import maintenance
 import official_info
+import part_matching
 import question_scope as scope
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 def answer(question, history=None, part_id=None):
-    part = maintenance.find_part(part_id) if part_id else maintenance.infer_part(question)
     followup = bool(re.fullmatch(scope.FOLLOWUP, question))
     previous = next((m['content'] for m in reversed(history or []) if m.get('role') == 'user'), '')
-    if followup and not part:
-        part = maintenance.infer_part(previous)
-        if part and not scope.supported(part, previous):
-            return scope.refusal('missing-evidence')
-    if re.search(scope.OFF_TOPIC, question, re.I):
+    request = previous if followup else question
+    if re.search(scope.OFF_TOPIC, question, re.I) or re.search(scope.OFF_TOPIC, request, re.I):
         return scope.refusal('out-of-scope')
+    part = maintenance.infer_part(request)
+    correction = None
+    if not part:
+        resolved = part_matching.resolve(request, maintenance.PARTS)
+        correction = resolved['match']
+        if correction:
+            part = correction['part']
+            request = correction['normalizedQuestion']
+        elif resolved['candidates']:
+            candidates = [{'id': p['id'], 'name': p['name']} for p in resolved['candidates']]
+            return {'answer': '부품을 하나로 특정하기 어렵습니다. ' + ', '.join(p['name'] for p in candidates) + ' 중 어느 부품인지 이름을 포함해 다시 질문해 주세요.',
+                    'sources': [], 'mode': 'scope', 'reason': 'ambiguous-part', 'candidates': candidates}
+    if part_id:
+        if part and part['id'] != part_id:
+            return scope.refusal('missing-evidence')
+        part = maintenance.find_part(part_id)
     official = official_info.answer(previous if followup else question) if not part else None
     if official:
         return official
     if part:
-        return maintenance.answer_manual('점검 및 정비 방법' if followup else question, part['id'])
+        if not scope.supported(part, request):
+            return scope.refusal('missing-evidence')
+        result = maintenance.answer_manual(request, part['id'])
+        if correction:
+            result['partMatch'] = {k: correction[k] for k in ('inputName', 'matchedName', 'normalizedQuestion')}
+            result['partMatch']['partId'] = part['id']
+            message = f"부품명 ‘{correction['inputName']}’을(를) ‘{part['name']}’으로 해석했습니다."
+            result['notice'] = message + ' ' + (result.get('notice') or '')
+        return result
     if re.fullmatch(r'(안녕|안녕하세요|반가워|안녕하십니까)[!?.~\s]*', question):
         return {'answer':'안녕하세요. 렉스턴 스포츠 2023의 부품 설명·점검·정비 방법과 검토된 제작사 공식 가격 정보를 안내합니다. 무엇이 궁금하신가요?', 'sources':[], 'mode':'document'}
     return scope.refusal('missing-evidence' if re.search(scope.VEHICLE, question) else 'out-of-scope')
