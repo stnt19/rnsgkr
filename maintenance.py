@@ -6,6 +6,7 @@ import re
 import threading
 import service_guides
 import question_scope as scope
+import manual_search
 from functools import lru_cache
 from collections import Counter
 from pathlib import Path
@@ -17,7 +18,7 @@ RECORDS=[]
 if (ROOT/'data/manuals.local.json').exists() and (ROOT/'data/manual-index.local.json').exists():
     MANUALS=json.loads((ROOT/'data/manuals.local.json').read_text(encoding='utf-8'))
     imported=json.loads((ROOT/'data/manual-index.local.json').read_text(encoding='utf-8'))
-    PARTS=imported['parts']; RECORDS=imported['pages']
+    RECORDS=imported['pages']
 RENDER_LOCK=threading.Lock()
 
 def words(text):
@@ -36,9 +37,32 @@ def infer_part(question):
     for part in PARTS:
         for term in [part['name'],part['sgn']]+part['aliases']:
             term=re.sub(r'\s+','',term).lower()
-            if term in compact:
+            if term and term in compact:
                 matches.append((len(term),part))
     return max(matches,key=lambda v:v[0])[1] if matches else None
+
+def mentioned_parts(question):
+    text=re.sub(r'\s+','',question).lower()
+    spans=[]
+    for part in PARTS:
+        for term in [part['name']]+part['aliases']:
+            term=re.sub(r'\s+','',term).lower()
+            if len(term)<2:continue
+            start=text.find(term)
+            if start>=0:spans.append((start,start+len(term),part))
+    chosen=[]
+    for start,end,part in sorted(spans,key=lambda s:s[1]-s[0],reverse=True):
+        if any(start<e and end>s for s,e,p in chosen):continue
+        if any(p['id']==part['id'] for s,e,p in chosen):continue
+        chosen.append((start,end,part))
+    return [p for s,e,p in sorted(chosen,key=lambda s:s[0])]
+
+def answer_multiple(question,parts):
+    replies=[answer_reference(question,p) for p in parts[:3]]
+    sources={s['id']:s for r in replies for s in r['sources']}
+    return {'answer':'여러 항목이 포함되어 각 항목의 관련 원문을 나누어 안내합니다.\n\n'+'\n\n'.join(r['answer'] for r in replies),
+            'sources':list(sources.values()),'mode':'manual','presentation':'manual-reference',
+            'notice':'한 번에 최대 3개 항목을 안내합니다. 부품 간 고장 원인이나 교환 필요성을 확정하지 않습니다.'}
 
 def source(record):
     doc=next(d for d in MANUALS if d['id']==record['docId'])
@@ -57,12 +81,20 @@ def part_detail(part):
     common=[source(r) for r in RECORDS if r['docId']==part['docId'] and not r['partIds'] and r['page'] in relevant]
     return {'part':part,'pages':pages,'precautions':common,'available':bool(pages)}
 
+def answer_reference(question, part=None):
+    found=manual_search.search(question,part,RECORDS,MANUALS)
+    if not found:return scope.refusal('missing-evidence')
+    text,chosen=found
+    return {'answer':text,'sources':[source(r) for r in chosen],'mode':'manual',
+            'presentation':'manual-reference','partId':part['id'] if part else None,
+            'notice':'2023년형 교범 원문 참고 안내입니다. 사양별 차이가 있으며, 검색 결과는 해당 부품의 고장 확정을 뜻하지 않습니다.'}
+
 def answer_manual(question,part_id=None):
     part=find_part(part_id) if part_id else infer_part(question)
     if not part:
         return None
-    if not scope.supported(part, question):
-        return scope.refusal('missing-evidence')
+    if not scope.supported(part, question) or part.get('coverage') == 'original-reference':
+        return answer_reference(question, part)
     pool=[(r,d) for r,d in zip(RECORDS,INDEX) if part['id'] in r['partIds']]
     if not pool:
         return {'answer':f"{part['name']}의 로컬 정비자료가 아직 색인되지 않았습니다. 자료 가져오기를 실행해 주세요.",'sources':[],'mode':'manual','partId':part['id']}

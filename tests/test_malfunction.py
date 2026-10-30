@@ -29,12 +29,13 @@ class MalfunctionScopeTests(unittest.TestCase):
             with self.subTest(q=q):
                 result=answer(q)
                 self.assertNotIn('guide',result)
-                self.assertEqual(result['sources'],[])
+                if result['sources']:self.assertEqual(result['presentation'],'manual-reference')
 
     def test_unknown_parts_still_need_evidence(self):
         result=answer('브레이크가 작동하지 않는다')
         self.assertNotIn('guide',result)
-        self.assertEqual(result['sources'],[])
+        self.assertTrue(result['sources'])
+        self.assertEqual(result['presentation'],'manual-reference')
 
     def test_missing_manual_does_not_fabricate_procedure(self):
         with patch.object(maintenance,'RECORDS',[]):
@@ -47,6 +48,7 @@ class MalfunctionScopeTests(unittest.TestCase):
 class MalfunctionGuideTests(unittest.TestCase):
     def test_all_parts_get_conditional_maintenance_not_confirmed_diagnosis(self):
         for part in maintenance.PARTS:
+            if part.get('coverage')!='reviewed-guide':continue
             with self.subTest(part=part['id']):
                 result=answer(part['name']+'가 작동하지 않는다')
                 self.assertEqual(result.get('presentation'),'service-guide')

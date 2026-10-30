@@ -4,6 +4,12 @@ from unittest.mock import patch
 import part_prices
 from server import answer
 
+def setUpModule():
+    global offline
+    offline=patch('live_prices.urlopen',side_effect=OSError('offline test'));offline.start()
+
+def tearDownModule():offline.stop()
+
 
 class PartPriceTests(unittest.TestCase):
     def test_reviewed_groups_return_part_numbers_not_vehicle_prices(self):
@@ -44,9 +50,9 @@ class PartPriceTests(unittest.TestCase):
             self.assertEqual(len(result['sources'][0]['items']),1)
 
     def test_ambiguous_part_and_unreviewed_price(self):
-        self.assertEqual(answer('필터 가격은?')['reason'],'ambiguous-part')
+        self.assertEqual(answer('필터 가격은?')['reason'],'price-unavailable')
         result=answer('퓨즈박스 가격')
-        self.assertEqual(result['reason'],'missing-evidence')
+        self.assertEqual(result['reason'],'price-unavailable')
         self.assertIn('공식 부품 가격',result['answer'])
 
     def test_other_year_or_unreviewed_requests_do_not_get_prices(self):

@@ -68,7 +68,9 @@ def resolve(question, parts):
         top = ranked[0]
         close = [r for r in ranked if top['score'] - r['score'] < .12]
         if len(close) == 1:
-            return {'match': top, 'candidates': []}
+            if scope.supported(top['part'],top['normalizedQuestion']) or re.search(r'가격|금액|단가|비용|얼마|전압|규정값|토크|수명|루멘',top['normalizedQuestion']):
+                return {'match': top, 'candidates': []}
+            return {'match':None,'candidates':[]}
         return {'match': None, 'candidates': [r['part'] for r in close]}
     # An incomplete shared noun is useful for clarification, never auto-substitute.
     candidates = {}

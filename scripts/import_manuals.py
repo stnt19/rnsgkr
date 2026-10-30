@@ -1,4 +1,4 @@
-"""Import only curated page ranges. Original PDFs remain at their local paths."""
+"""Register local PDFs and build a full searchable index. PDFs stay local."""
 import argparse
 import hashlib
 import json
@@ -74,6 +74,8 @@ def main():
     for name,value in [('manuals.local.json',manuals),('manual-index.local.json',result),('manual-import-report.local.json',{'documents':len(manuals),'totalPages':sum(d['pages'] for d in manuals),'selectedPages':len(records),'catalogMatches':{k:len(v) for k,v in catalog_refs.items()}})]:
         (out/name).write_text(json.dumps(value,ensure_ascii=False,indent=2),encoding='utf-8')
     print(json.dumps({'selectedPages':len(records),'catalogMatches':{k:len(v) for k,v in catalog_refs.items()}},ensure_ascii=False),flush=True)
+    from index_full_manuals import main as index_all
+    index_all()
 
 if __name__=='__main__':
     main()

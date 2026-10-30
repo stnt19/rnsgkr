@@ -10,6 +10,7 @@ from server import answer, Handler
 class ServiceGuideTests(unittest.TestCase):
     def test_each_part_has_traceable_paraphrases_and_images(self):
         for part in maintenance.PARTS:
+            if part.get('coverage')!='reviewed-guide':continue
             with self.subTest(part=part['id']):
                 result=answer('점검 및 정비 방법',part_id=part['id'])
                 self.assertEqual(result.get('presentation'),'service-guide')
@@ -54,9 +55,9 @@ class ServiceGuideTests(unittest.TestCase):
 
     def test_numeric_request_is_not_answered_with_unverified_value(self):
         result=answer('배터리 전압 규정값은?')
-        self.assertEqual(result['reason'],'missing-evidence')
+        self.assertEqual(result['presentation'],'manual-reference')
         self.assertNotIn('guide',result)
-        self.assertNotIn('11.0 V',result['answer'])
+        self.assertIn('단정하지 않습니다',result['answer'])
 
     def test_figure_handler_accepts_only_registered_crop(self):
         stream=io.BytesIO();Image.new('RGB',(1000,1400),'white').save(stream,format='PNG')

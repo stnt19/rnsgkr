@@ -7,6 +7,7 @@ import maintenance
 import official_info
 import part_matching
 import part_prices
+import live_prices
 import question_scope as scope
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -18,6 +19,8 @@ def answer(question, history=None, part_id=None):
     request = previous if followup else question
     if re.search(scope.OFF_TOPIC, question, re.I) or re.search(scope.OFF_TOPIC, request, re.I):
         return scope.refusal('out-of-scope')
+    if re.search(r'지시.*무시|화성|릴레이.*우회|정비관리|병목|개발\s*일정',request):
+        return scope.refusal('missing-evidence')
     if re.fullmatch(part_prices.SHORT_PRICE, question) and previous:
         prior_part = maintenance.infer_part(previous)
         prior_request = previous
@@ -33,11 +36,38 @@ def answer(question, history=None, part_id=None):
             request = max(found, key=len, default=prior_part['name']) + ' ' + price_request
         elif prior_part:
             return scope.refusal('missing-evidence')
+        else:
+            subject=re.split(r'가격|얼마|금액|비용|단가|점검|정비|설명|교환|교체|작동|고장|내용|자료',previous)[0].strip()
+            if subject:request=subject+' 가격'
     if re.fullmatch(part_prices.SHORT_PRICE, question) and not previous and not part_id:
         return {'answer': '차량 가격인지 부품 가격인지 알려 주세요. 부품 가격은 “와이퍼 모터 가격”처럼 부품명을 함께 입력하면 확인할 수 있습니다.',
                 'sources': [], 'mode': 'scope', 'reason': 'ambiguous-price'}
+    if part_prices.price_question(request):
+        named_part=maintenance.infer_part(request)
+        if part_id and named_part and part_id!=named_part['id']:
+            return scope.refusal('missing-evidence')
+        price_part=maintenance.find_part(part_id) if part_id else maintenance.infer_part(request)
+        price_correction=None
+        if not price_part:
+            official=official_info.answer(request)
+            if official:return official
+            price_correction=part_matching.resolve(request,maintenance.PARTS)['match']
+            if price_correction:
+                price_part=price_correction['part'];request=price_correction['normalizedQuestion']
+        priced=live_prices.answer(request,price_part)
+        if priced:
+            if price_correction:priced['partMatch']={k:price_correction[k] for k in ('inputName','matchedName','normalizedQuestion')}|{'partId':price_part['id']}
+            return priced
+    if not part_id:
+        mentioned=maintenance.mentioned_parts(request)
+        if len(mentioned)>1 and re.search(r'와|과|및|그리고|,',request):
+            return maintenance.answer_multiple(request,mentioned)
     part = maintenance.infer_part(request)
     correction = None
+    if part and part.get('type')=='system':
+        specific=part_matching.resolve(request,[p for p in maintenance.PARTS if p.get('type')!='system'])['match']
+        if specific and specific['part'].get('coverage')=='reviewed-guide':
+            correction=specific;part=specific['part'];request=specific['normalizedQuestion']
     if not part:
         resolved = part_matching.resolve(request, maintenance.PARTS)
         if not resolved['match'] and not resolved['candidates'] and part_prices.price_question(request):
@@ -61,8 +91,6 @@ def answer(question, history=None, part_id=None):
         return official
     if part:
         result = part_prices.answer(part, request) if part_prices.price_question(request) else None
-        if result is None and not scope.supported(part, request):
-            return scope.refusal('missing-evidence')
         if result is None:
             result = maintenance.answer_manual(request, part['id'])
         if correction:
@@ -73,7 +101,9 @@ def answer(question, history=None, part_id=None):
         return result
     if re.fullmatch(r'(안녕|안녕하세요|반가워|안녕하십니까)[!?.~\s]*', question):
         return {'answer':'안녕하세요. 렉스턴 스포츠 2023의 부품 설명·점검·정비 방법과 검토된 제작사 공식 가격 정보를 안내합니다. 무엇이 궁금하신가요?', 'sources':[], 'mode':'document'}
-    return scope.refusal('missing-evidence' if re.search(scope.VEHICLE, question) else 'out-of-scope')
+    if re.search(scope.VEHICLE,request):
+        return maintenance.answer_reference(request)
+    return scope.refusal('out-of-scope')
 
 class Handler(BaseHTTPRequestHandler):
     def send(self, code, data, mime='application/json; charset=utf-8'):

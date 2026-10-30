@@ -81,7 +81,7 @@ async function ask(question) {
     const data = await response.json(); if(!response.ok) throw new Error(data.error || '답변 요청에 실패했습니다.');
     pending.remove(); addMessage('assistant',data.answer,data.sources,data.notice,data.guide);
     history.push({role:'user',content:question},{role:'assistant',content:data.answer.slice(0,4000)});
-    $('mode').textContent = data.mode === 'manual' ? '교범 기반 정리 안내 · 출처·그림 포함' : data.mode === 'official' ? '제작사 공식 자료 · 출처·확인일·연식 구분' : '검토된 자료 기반 안내';
+    $('mode').textContent = data.mode === 'manual' ? (data.presentation === 'manual-reference' ? '교범 원문 검색 · 발췌·페이지 확인' : '교범 기반 정리 안내 · 출처·그림 포함') : data.mode === 'official' ? '제작사 공식 자료 · 출처·확인일·연식 구분' : '검토된 자료 기반 안내';
   } catch(error) { pending.remove(); addMessage('assistant',`답변을 가져오지 못했습니다. ${error.name === 'TimeoutError' ? '응답 시간이 초과되었습니다.' : error.message} 다시 질문해 주세요.`); }
   finally { busy = false; $('send').disabled = false; $('reset').disabled = false; $('question').focus(); }
 }
@@ -99,12 +99,23 @@ async function init() {
     const heading=node('h2','렉스턴 스포츠 2023 · 정비교범','manual-library-title');
     const list=node('div','','manual-docs');manuals.forEach(d=>{const card=node('article','','manual-doc');card.append(node('strong',`${d.title} · ${d.pages.toLocaleString()}쪽`),node('p',d.scope));if(d.available){const link=node('a','원본 PDF 열기 ↗');link.href='/document?doc='+encodeURIComponent(d.id);link.target='_blank';link.rel='noopener';card.append(link);}list.append(card);});
     $('pageList').before(heading,list,node('h2','제작사 공식 자료','manual-library-title'));
+    const registry=node('section','','manual-doc');
+    registry.append(node('h2',`부품·시스템 검색 · ${parts.parts.length}개 항목`),node('p','상세 안내: 검토된 정비 요약 / 원문 참고: 관련 교범의 발췌와 페이지 안내'));
+    const filter=node('input');filter.type='search';filter.placeholder='부품명·별칭·계통 검색 (예: 오일 펌프, 브레이크)';filter.setAttribute('aria-label','부품·시스템 검색');filter.style.cssText='width:100%;padding:12px;margin:8px 0';
+    const count=node('p'),results=node('div','','sources');
+    function drawParts(){
+      const q=filter.value.replace(/\s/g,'').toLowerCase();
+      const found=parts.parts.filter(p=>[p.name,p.group,...p.aliases].some(n=>n.replace(/\s/g,'').toLowerCase().includes(q)));
+      count.textContent=`${found.length}개 검색됨 · 최대 60개 표시`;
+      results.replaceChildren();found.slice(0,60).forEach(p=>{const b=node('button',`${p.name} · ${p.coverage==='reviewed-guide'?'상세 안내':'원문 참고'}`,'source-chip');b.onclick=()=>ask(p.name+' 설명과 점검 방법');results.append(b);});
+    }
+    filter.oninput=drawParts;registry.append(filter,count,results);list.after(registry);drawParts();
     document.querySelector('.badge').textContent='렉스턴 스포츠 2023 · 교범·공식 자료';
     document.querySelector('.document-strip strong').textContent='렉스턴 스포츠 2023 정비교범 · 제작사 공식 정보';
-    document.querySelector('.document-strip div > span').textContent=`차량 교범 ${manuals.length}개 · 선별 ${parts.indexedPages}쪽 · 대상 부품 ${parts.parts.length}종`;
+    document.querySelector('.document-strip div > span').textContent=`차량 교범 ${manuals.length}개 · 검색 ${parts.indexedPages.toLocaleString()}쪽 · 부품·시스템 ${parts.parts.length}개`;
     document.querySelector('.welcome p').textContent='부품 설명·점검 방법과 검토된 제작사 공식 가격 정보를 확인하세요.';
     document.querySelector('.scope-note').textContent='ⓘ 차량 사양과 정비교범의 원문·주의사항을 확인하세요. 증상만으로 고장을 확정하지 않습니다.';
-    document.querySelector('#libraryPanel > p').textContent='정비교범과 검토된 제작사 공식 자료입니다. 공식 정보는 출처·확인일·2023년형 해당 여부를 확인하세요. 실시간 검색 결과가 아닙니다.';
+    document.querySelector('#libraryPanel > p').textContent='2023년형 교범 전체 텍스트를 검색합니다. 배선도는 원문 확인 전용입니다. 부품 가격은 PDF 등록 여부와 무관하게 공식 조회하며, 아래 저장된 자료와 각 답변의 확인일·연식 적용 여부를 구분해 확인하세요.';
     $('question').placeholder='예: 배터리 점검 방법, 와이퍼 모터 가격';
     $('mode').textContent='교범·공식 자료 기반 안내 · API 키 없이 실행';
     const examples=[['배터리 점검 방법을 알려 주세요','01 / 충전 계통','배터리 점검 방법'],['에어컨 필터 교환 방법을 알려 주세요','02 / 필터 교환','에어컨 필터 교환'],['헤드램프에 결로가 계속 생겨요','03 / 램프 정비','헤드 램프 결로 확인'],['와이퍼 모터 가격은?','04 / 공식 가격 정보','와이퍼 모터 가격']];

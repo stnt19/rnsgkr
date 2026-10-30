@@ -1,5 +1,12 @@
 import unittest
+from unittest.mock import patch
 from server import answer, Handler
+
+def setUpModule():
+    global offline
+    offline=patch('live_prices.urlopen',side_effect=OSError('offline test'));offline.start()
+
+def tearDownModule():offline.stop()
 
 class DocumentAssistantTests(unittest.TestCase):
     def test_removed_topics_never_return_internal_content(self):
@@ -12,8 +19,9 @@ class DocumentAssistantTests(unittest.TestCase):
 
     def test_no_invented_repair(self):
         result = answer('엔진 시동이 안 걸릴 때 수리 방법과 토크값은?')
-        self.assertEqual(result['reason'],'missing-evidence')
-        self.assertEqual(result['sources'],[])
+        self.assertEqual(result['presentation'],'manual-reference')
+        self.assertNotIn('guide',result)
+        self.assertIn('단정하지 않습니다',result['answer'])
 
     def test_unknown_question(self):
         result = answer('바나나 케이크 레시피')
@@ -36,7 +44,9 @@ class ScopeTests(unittest.TestCase):
     def test_unsupported_vehicle_requests_have_no_guide_or_sources(self):
         for q in ['배터리 전압 규정값은?', '배터리 수명이 몇 년인가요?', '배터리 점검 후 화성에서 충전하는 방법', '브레이크 고장 진단', '라디에이터에서 이상한 소리가 나요', '배터리와 브레이크 교환 방법', '헤드램프 밝기는 몇 루멘인가요?']:
             with self.subTest(q=q):
-                r=answer(q); self.assertEqual(r['reason'],'missing-evidence'); self.assertEqual(r['sources'],[]); self.assertNotIn('guide',r)
+                r=answer(q); self.assertNotIn('guide',r)
+                if '화성' in q:self.assertEqual(r['sources'],[])
+                else:self.assertEqual(r['presentation'],'manual-reference');self.assertTrue(r['sources'])
 
     def test_unrelated_followup_cannot_reuse_previous_part(self):
         r=answer('그럼 영화 추천해줘',[{'role':'user','content':'배터리 점검'}])
@@ -47,7 +57,8 @@ class ScopeTests(unittest.TestCase):
 
     def test_unsupported_previous_question_cannot_become_generic_guide(self):
         r=answer('그럼 더 자세히 알려줘',[{'role':'user','content':'배터리 전압 규정값은?'}])
-        self.assertEqual(r['reason'],'missing-evidence')
+        self.assertEqual(r['presentation'],'manual-reference')
+        self.assertNotIn('guide',r)
 
 class OfficialInformationTests(unittest.TestCase):
     def test_price_has_review_date_source_and_year_scope(self):

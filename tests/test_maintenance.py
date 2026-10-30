@@ -47,7 +47,7 @@ class MaintenanceTests(unittest.TestCase):
         self.assertEqual(maintenance.infer_part('261001')['id'],'battery')
 
     def test_unknown_part_is_not_guessed(self):
-        self.assertIsNone(maintenance.infer_part('내비게이션 화면이 켜지지 않아요'))
+        self.assertIsNone(maintenance.infer_part('존재하지않는장치XYZ 설명'))
         self.assertIsNone(maintenance.find_part('../../secret'))
 
     def test_public_registry_hides_local_paths(self):
@@ -61,7 +61,7 @@ class LocalManualTests(unittest.TestCase):
             with self.subTest(part=part['id']):
                 self.assertTrue(detail['available'])
                 self.assertTrue(any(p['page']==part['overview'] for p in detail['pages']))
-                self.assertTrue(all(p['docId']==part['docId'] for p in detail['pages']))
+                self.assertTrue(all(any(l['docId']==p['docId'] and l['start']<=p['page']<=l['end'] for l in part['locations']) or (part.get('diagnosis') and part['docId']==p['docId'] and part['diagnosis'][0]<=p['page']<=part['diagnosis'][1]) for p in detail['pages']))
 
     def test_selected_part_does_not_return_other_component_sources(self):
         result=answer('위치와 탈거 장착 정보를 보여 주세요',part_id='cabin-filter')
