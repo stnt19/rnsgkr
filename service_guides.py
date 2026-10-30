@@ -2,6 +2,7 @@
 import copy
 import json
 import re
+import question_scope as scope
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parent
@@ -13,7 +14,8 @@ def build_guide(part,question,records,manuals):
     if not spec or not manifest or DATA['sourceHashes'].get(part['docId'])!=manifest.get('sha256'):
         return None
     spec=copy.deepcopy(spec)
-    label='점검·정비 안내'
+    generic_failure=scope.malfunction(question)
+    label='작동 이상 · 기본 점검·정비 안내' if generic_failure else '점검·정비 안내'
     for variant in spec.get('variants',[]):
         if any(word in question for word in variant['keywords']):
             label=variant['label']
@@ -31,7 +33,7 @@ def build_guide(part,question,records,manuals):
     try:
         description=claim(spec['description'])
         sections=[{'id':'checks','title':'먼저 확인할 사항','ordered':False,'items':[claim(c) for c in spec['checks']]},
-                  {'id':'steps','title':'정비 작업 흐름','ordered':True,'items':[claim(c) for c in spec['steps']]}]
+                  {'id':'steps','title':'점검 후 필요 시 진행하는 정비 작업' if generic_failure else '정비 작업 흐름','ordered':True,'items':[claim(c) for c in spec['steps']]}]
         warnings=[claim(c) for c in spec['warnings']]
         if re.search(r'토크|토오크|규정값|전압|몇\s*(V|볼트|Nm)',question,re.I):
             warnings.insert(0,{'text':'질문한 수치는 이 요약에서 단정하지 않습니다. 측정 조건·부위·차량 사양이 맞는 원문 규정값을 확인하세요.','refs':[]})
@@ -49,7 +51,11 @@ def build_guide(part,question,records,manuals):
     guide={'title':part['name'],'subtitle':label,'question':question,'description':description,'sections':sections,
            'warnings':warnings,'figures':figures,'followUp':follow_up,
            'scope':'교범을 검토해 쉽게 풀어 쓴 작업 개요입니다. 고장 확정이나 모든 선행·후속 작업을 포함한 전체 절차가 아닙니다.'}
+    if generic_failure:
+        guide['scope']='상세 증상 없이 참고할 수 있는 기본 점검과 관련 정비 개요입니다. 원인을 확정한 진단이 아니며 탈거·교환은 점검 후 필요성이 확인된 경우에 진행합니다.'
     plain=part['name']+' · '+label+'\n'+description['text']+'\n\n'
+    if generic_failure:
+        plain+=guide['scope']+'\n\n'
     plain+='\n\n'.join(s['title']+'\n'+'\n'.join(f"{i+1}. {c['text']}" for i,c in enumerate(s['items'])) for s in sections)
     plain+='\n\n주의사항\n'+'\n'.join(c['text'] for c in warnings)
     return guide,plain,[available[p] for p in sorted(used)]

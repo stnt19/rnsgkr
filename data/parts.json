@@ -10,5 +10,6 @@
   {"id":"engine-fuse","name":"엔진 룸 퓨즈 박스","aliases":["퓨즈박스","퓨즈 박스","fuse box"],"docId":"service-upper","sgn":"841002","pages":[161,164],"diagnosis":null,"overview":161,"group":"전장","questions":["작동하지 않는 전기장치가 무엇인가요?","퓨즈 명칭·용량과 차량 옵션을 확인했나요?"]},
   {"id":"headlamp","name":"헤드 램프","aliases":["헤드램프","전조등","headlamp","헤드라이트"],"docId":"service-upper","sgn":"831001","pages":[30,59],"diagnosis":null,"overview":30,"group":"전장","questions":["좌우 어느 쪽이며 어떤 램프가 작동하지 않나요?","A·B·C 타입 중 해당 차량의 램프 타입을 확인했나요?"]},
   {"id":"cabin-filter","name":"에어컨 필터","aliases":["캐빈 필터","캐빈필터","공조 필터","cabin filter"],"docId":"body-hvac","sgn":"681003","pages":[771,773],"diagnosis":null,"overview":771,"group":"공조","questions":["풍량 저하, 냄새, 정기 교환 중 어떤 작업인가요?","필터 오염 상태와 교환 이력을 확인했나요?"]},
-  {"id":"blower","name":"블로워 모터","aliases":["블로워","송풍 모터","blower"],"docId":"body-hvac","sgn":"681005","pages":[777,779],"diagnosis":null,"overview":777,"group":"공조","questions":["송풍이 안 되거나 소음이 발생하나요?","풍량 단계별 작동 상태와 관련 점검 결과가 있나요?"]}
+  {"id":"blower","name":"블로워 모터","aliases":["블로워","송풍 모터","blower"],"docId":"body-hvac","sgn":"681005","pages":[777,779],"diagnosis":null,"overview":777,"group":"공조","questions":["송풍이 안 되거나 소음이 발생하나요?","풍량 단계별 작동 상태와 관련 점검 결과가 있나요?"]},
+  {"id":"wiper","name":"프런트 와이퍼","aliases":["와이퍼","윈드실드 와이퍼","윈드 실드 와이퍼","전면 와이퍼","앞유리 와이퍼","와이퍼 모터","와이퍼 블레이드","wiper"],"docId":"service-upper","sgn":"781000","pages":[281,321],"diagnosis":null,"overview":284,"group":"전장","questions":["모든 작동 모드에서 멈추나요, AUTO 모드에서만 이상한가요?","블레이드가 얼어 있거나 마모되어 있나요?"]}
 ]

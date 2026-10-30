@@ -20,7 +20,7 @@ def distance(left, right):
 
 def name_spans(question):
     # Keep exact source offsets: only the candidate name may be replaced.
-    actions = r'점검|정비|교환|교체|탈거|장착|위치|구성|설명|방법|절차|가격|전압|수명|결로|습기|알려|보여'
+    actions = r'작동|동작|고장|이상|점검|정비|교환|교체|탈거|장착|위치|구성|설명|방법|절차|가격|전압|수명|결로|습기|알려|보여'
     tokens = list(re.finditer(r'[가-힣a-zA-Z0-9]+', question))
     for i, token in enumerate(tokens):
         for last in tokens[i:i+4]:

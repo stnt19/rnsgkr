@@ -26,6 +26,7 @@ function guideRef(source){
 function renderGuide(guide,sources){
   const root=node('div','','service-guide');const byId=new Map(sources.map(s=>[s.id,s]));
   const header=node('div','','guide-heading');header.append(node('span','REXTON SPORTS 2023','guide-kicker'),node('h2',guide.title),node('p',guide.subtitle));root.append(header);
+  if(guide.subtitle.includes('작동 이상'))root.append(node('p',guide.scope,'guide-scope'));
   if(guide.question)root.append(node('p','입력한 내용: '+guide.question,'guide-question'));
   function addClaim(container,claim,tag='p'){
     const item=node(tag);item.append(node('span',claim.text));
