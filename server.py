@@ -6,6 +6,7 @@ import re
 import urllib.request
 from urllib.parse import urlparse, parse_qs
 import maintenance
+import question_scope as scope
 from collections import Counter
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -35,30 +36,27 @@ def search(question):
     return [p for _, p in sorted(scores, key=lambda x:x[0], reverse=True)[:3]]
 
 def answer(question, history=None, part_id=None):
-    manual = maintenance.answer_manual(question, part_id)
-    if not manual and history and re.search(r'그것|그럼|자세히|더 알려|이 부분', question):
-        previous = next((m['content'] for m in reversed(history) if m.get('role') == 'user'), '')
-        previous_part = maintenance.infer_part(previous)
-        if previous_part:
-            manual = maintenance.answer_manual(question, previous_part['id'])
-    if manual:
-        return manual
+    part = maintenance.find_part(part_id) if part_id else maintenance.infer_part(question)
+    followup = bool(re.fullmatch(scope.FOLLOWUP, question))
+    previous = next((m['content'] for m in reversed(history or []) if m.get('role') == 'user'), '')
+    if followup and not part:
+        part = maintenance.infer_part(previous)
+        if part and not scope.supported(part, previous):
+            return scope.refusal('missing-evidence')
+    if re.search(scope.OFF_TOPIC, question, re.I):
+        return scope.refusal('out-of-scope')
+    if part:
+        return maintenance.answer_manual('점검 및 정비 방법' if followup else question, part['id'])
     if re.fullmatch(r'(안녕|안녕하세요|반가워|안녕하십니까)[!?.~\s]*', question):
-        return {'answer':'안녕하세요. 군학연계 AI 정비관리 제안서의 기능, 데이터, 시스템 구조와 개발 일정을 찾아드립니다. 무엇이 궁금하신가요?', 'sources':[], 'mode':'document'}
-    # Very short follow-up questions can refer back to the last user topic.
-    retrieval_question = question
-    if history and re.search(r'그것|그럼|자세히|더 알려|이 부분', question):
-        previous = next((m['content'] for m in reversed(history) if m.get('role') == 'user'), '')
-        retrieval_question = previous + ' ' + question
+        return {'answer':'안녕하세요. 렉스턴 스포츠 2023의 부품 설명·점검·정비 방법과 군학연계 자료를 안내합니다. 무엇이 궁금하신가요?', 'sources':[], 'mode':'document'}
+    retrieval_question = previous if followup else question
+    if not re.search(scope.PROJECT, retrieval_question, re.I):
+        return scope.refusal('missing-evidence' if re.search(scope.VEHICLE, question) else 'out-of-scope')
     sources = search(retrieval_question)
-    repair = re.search(r'시동|누유|과열|토크|공기압|수리\s*방법|정비\s*절차|진단|교체\s*(방법|주기|시기)|고장.*(조치|해결)', question)
-    if repair:
-        sources = [PAGES[5]]
-        result = '이 PDF는 시스템 개발 제안서이며, 해당 증상의 진단·수리 절차, 토크값 또는 실제 교체 주기를 제공하지 않습니다.\n\n제안서에서는 교범과 과거 정비 이력을 검색하는 RAG 챗봇을 구상합니다. 장비 모델에 맞는 승인된 정비 교범과 정비 이력을 추가해야 구체적인 근거를 찾아 안내할 수 있습니다.'
-    elif not sources:
-        result = '제공된 제안서에서 질문에 답할 근거를 찾지 못했습니다. 질문에 기능, RAG 챗봇, 데이터, 폐쇄망 구조, 개발 일정 등 구체적인 주제를 넣어 주세요. 실제 장비 상태와 정비 이력은 아직 연결되어 있지 않습니다.'
-    else:
-        result = '\n\n'.join(f"{p['title']} [{p['page']}쪽]\n{p['text']}" for p in sources)
+    if not sources:
+        return scope.refusal('missing-evidence')
+    repair = False
+    result = '\n\n'.join(f"{p['title']} [{p['page']}쪽]\n{p['text']}" for p in sources)
     mode = 'document'
     notice = None
     if MODEL and sources and not repair:

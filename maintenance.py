@@ -5,6 +5,7 @@ import math
 import re
 import threading
 import service_guides
+import question_scope as scope
 from functools import lru_cache
 from collections import Counter
 from pathlib import Path
@@ -60,6 +61,8 @@ def answer_manual(question,part_id=None):
     part=find_part(part_id) if part_id else infer_part(question)
     if not part:
         return None
+    if not scope.supported(part, question):
+        return scope.refusal('missing-evidence')
     pool=[(r,d) for r,d in zip(RECORDS,INDEX) if part['id'] in r['partIds']]
     if not pool:
         return {'answer':f"{part['name']}의 로컬 정비자료가 아직 색인되지 않았습니다. 자료 가져오기를 실행해 주세요.",'sources':[],'mode':'manual','partId':part['id']}

@@ -54,7 +54,8 @@ class ServiceGuideTests(unittest.TestCase):
 
     def test_numeric_request_is_not_answered_with_unverified_value(self):
         result=answer('배터리 전압 규정값은?')
-        self.assertIn('측정 조건',result['guide']['warnings'][0]['text'])
+        self.assertEqual(result['reason'],'missing-evidence')
+        self.assertNotIn('guide',result)
         self.assertNotIn('11.0 V',result['answer'])
 
     def test_figure_handler_accepts_only_registered_crop(self):
