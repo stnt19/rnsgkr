@@ -1,0 +1,354 @@
+[
+  {
+    "id": "kgm-part-price-air-cleaner",
+    "partId": "air-cleaner",
+    "partName": "에어클리너",
+    "reviewed": true,
+    "publisher": "KGM 공식 사이트 · 순정부품 조회",
+    "url": "https://www.kg-mobility.com/sr/service-network/search-parts",
+    "checkedAt": "2026-10-31",
+    "modelCode": "U",
+    "modelName": "렉스턴스포츠",
+    "applicability2023": "미확정 — 공식 조회에서 렉스턴스포츠(U)로 검색된 품번입니다. 연식·생산 시점·옵션별 적용 정보는 제공되지 않아 2023년형 호환을 확정하지 않습니다.",
+    "vatIncluded": false,
+    "laborIncluded": false,
+    "items": [
+      {
+        "partNumber": "2311036100",
+        "name": "에어 클리너 어셈블리-터보",
+        "priceExVat": 46600
+      },
+      {
+        "partNumber": "2311036400",
+        "name": "에어 클리너 어셈블리-터보",
+        "priceExVat": 49600
+      }
+    ]
+  },
+  {
+    "id": "kgm-part-price-battery",
+    "partId": "battery",
+    "partName": "배터리",
+    "reviewed": true,
+    "publisher": "KGM 공식 사이트 · 순정부품 조회",
+    "url": "https://www.kg-mobility.com/sr/service-network/search-parts",
+    "checkedAt": "2026-10-31",
+    "modelCode": "U",
+    "modelName": "렉스턴스포츠",
+    "applicability2023": "미확정 — 공식 조회에서 렉스턴스포츠(U)로 검색된 품번입니다. 연식·생산 시점·옵션별 적용 정보는 제공되지 않아 2023년형 호환을 확정하지 않습니다.",
+    "vatIncluded": false,
+    "laborIncluded": false,
+    "items": [
+      {
+        "partNumber": "268A036000",
+        "name": "배터리 어셈블리",
+        "priceExVat": 232000
+      },
+      {
+        "partNumber": "268A205113",
+        "name": "배터리 어셈블리-SY90R",
+        "priceExVat": 127000
+      }
+    ]
+  },
+  {
+    "id": "kgm-part-price-alternator",
+    "partId": "alternator",
+    "partName": "알터네이터",
+    "reviewed": true,
+    "publisher": "KGM 공식 사이트 · 순정부품 조회",
+    "url": "https://www.kg-mobility.com/sr/service-network/search-parts",
+    "checkedAt": "2026-10-31",
+    "modelCode": "U",
+    "modelName": "렉스턴스포츠",
+    "applicability2023": "미확정 — 공식 조회에서 렉스턴스포츠(U)로 검색된 품번입니다. 연식·생산 시점·옵션별 적용 정보는 제공되지 않아 2023년형 호환을 확정하지 않습니다.",
+    "vatIncluded": false,
+    "laborIncluded": false,
+    "items": [
+      {
+        "partNumber": "6711540302",
+        "name": "알터네이터 어셈블리",
+        "priceExVat": 311700
+      },
+      {
+        "partNumber": "6721540202",
+        "name": "알터네이터 어셈블리",
+        "priceExVat": 338700
+      },
+      {
+        "partNumber": "6721540302",
+        "name": "알터네이터 어셈블리",
+        "priceExVat": 364000
+      }
+    ]
+  },
+  {
+    "id": "kgm-part-price-oil-filter",
+    "partId": "oil-filter",
+    "partName": "엔진 오일 필터",
+    "reviewed": true,
+    "publisher": "KGM 공식 사이트 · 순정부품 조회",
+    "url": "https://www.kg-mobility.com/sr/service-network/search-parts",
+    "checkedAt": "2026-10-31",
+    "modelCode": "U",
+    "modelName": "렉스턴스포츠",
+    "applicability2023": "미확정 — 공식 조회에서 렉스턴스포츠(U)로 검색된 품번입니다. 연식·생산 시점·옵션별 적용 정보는 제공되지 않아 2023년형 호환을 확정하지 않습니다.",
+    "vatIncluded": false,
+    "laborIncluded": false,
+    "items": [
+      {
+        "partNumber": "6721803009",
+        "name": "엘리먼트 키트-오일 필터",
+        "priceExVat": 11200
+      },
+      {
+        "partNumber": "6721803109",
+        "name": "엘리먼트 키트-오일 필터",
+        "priceExVat": 11200
+      }
+    ]
+  },
+  {
+    "id": "kgm-part-price-coolant-tank",
+    "partId": "coolant-tank",
+    "partName": "냉각수 리저버 탱크",
+    "reviewed": true,
+    "publisher": "KGM 공식 사이트 · 순정부품 조회",
+    "url": "https://www.kg-mobility.com/sr/service-network/search-parts",
+    "checkedAt": "2026-10-31",
+    "modelCode": "U",
+    "modelName": "렉스턴스포츠",
+    "applicability2023": "미확정 — 공식 조회에서 렉스턴스포츠(U)로 검색된 품번입니다. 연식·생산 시점·옵션별 적용 정보는 제공되지 않아 2023년형 호환을 확정하지 않습니다.",
+    "vatIncluded": false,
+    "laborIncluded": false,
+    "items": [
+      {
+        "partNumber": "2161032223",
+        "name": "탱크 어셈블리-리저버",
+        "priceExVat": 31400
+      },
+      {
+        "partNumber": "2161036100",
+        "name": "탱크 어셈블리-리저버",
+        "priceExVat": 31500
+      }
+    ]
+  },
+  {
+    "id": "kgm-part-price-radiator",
+    "partId": "radiator",
+    "partName": "라디에이터",
+    "reviewed": true,
+    "publisher": "KGM 공식 사이트 · 순정부품 조회",
+    "url": "https://www.kg-mobility.com/sr/service-network/search-parts",
+    "checkedAt": "2026-10-31",
+    "modelCode": "U",
+    "modelName": "렉스턴스포츠",
+    "applicability2023": "미확정 — 공식 조회에서 렉스턴스포츠(U)로 검색된 품번입니다. 연식·생산 시점·옵션별 적용 정보는 제공되지 않아 2023년형 호환을 확정하지 않습니다.",
+    "vatIncluded": false,
+    "laborIncluded": false,
+    "items": [
+      {
+        "partNumber": "2131036021",
+        "name": "라디에이터 어셈블리-쿨링",
+        "priceExVat": 243400
+      },
+      {
+        "partNumber": "2132038381",
+        "name": "라디에이터 어셈블리-쿨링",
+        "priceExVat": 243400
+      }
+    ]
+  },
+  {
+    "id": "kgm-part-price-fuel-filter",
+    "partId": "fuel-filter",
+    "partName": "연료 필터",
+    "reviewed": true,
+    "publisher": "KGM 공식 사이트 · 순정부품 조회",
+    "url": "https://www.kg-mobility.com/sr/service-network/search-parts",
+    "checkedAt": "2026-10-31",
+    "modelCode": "U",
+    "modelName": "렉스턴스포츠",
+    "applicability2023": "미확정 — 공식 조회에서 렉스턴스포츠(U)로 검색된 품번입니다. 연식·생산 시점·옵션별 적용 정보는 제공되지 않아 2023년형 호환을 확정하지 않습니다.",
+    "vatIncluded": false,
+    "laborIncluded": false,
+    "items": [
+      {
+        "partNumber": "2247034001",
+        "name": "필터 어셈블리-퓨얼",
+        "priceExVat": 84600
+      },
+      {
+        "partNumber": "2247634000",
+        "name": "엘리먼트 킷-퓨얼 필터",
+        "priceExVat": 50300
+      }
+    ]
+  },
+  {
+    "id": "kgm-part-price-starter",
+    "partId": "starter",
+    "partName": "스타팅 모터",
+    "reviewed": true,
+    "publisher": "KGM 공식 사이트 · 순정부품 조회",
+    "url": "https://www.kg-mobility.com/sr/service-network/search-parts",
+    "checkedAt": "2026-10-31",
+    "modelCode": "U",
+    "modelName": "렉스턴스포츠",
+    "applicability2023": "미확정 — 공식 조회에서 렉스턴스포츠(U)로 검색된 품번입니다. 연식·생산 시점·옵션별 적용 정보는 제공되지 않아 2023년형 호환을 확정하지 않습니다.",
+    "vatIncluded": false,
+    "laborIncluded": false,
+    "items": [
+      {
+        "partNumber": "6711510301",
+        "name": "스타터 어셈블리",
+        "priceExVat": 188800
+      },
+      {
+        "partNumber": "6721510001",
+        "name": "스타터 어셈블리",
+        "priceExVat": 221000
+      }
+    ]
+  },
+  {
+    "id": "kgm-part-price-headlamp",
+    "partId": "headlamp",
+    "partName": "헤드 램프",
+    "reviewed": true,
+    "publisher": "KGM 공식 사이트 · 순정부품 조회",
+    "url": "https://www.kg-mobility.com/sr/service-network/search-parts",
+    "checkedAt": "2026-10-31",
+    "modelCode": "U",
+    "modelName": "렉스턴스포츠",
+    "applicability2023": "미확정 — 공식 조회에서 렉스턴스포츠(U)로 검색된 품번입니다. 연식·생산 시점·옵션별 적용 정보는 제공되지 않아 2023년형 호환을 확정하지 않습니다.",
+    "vatIncluded": false,
+    "laborIncluded": false,
+    "items": [
+      {
+        "partNumber": "8310138000",
+        "name": "램프 어셈블리-헤드-좌",
+        "priceExVat": 247000
+      },
+      {
+        "partNumber": "8310238000",
+        "name": "램프 어셈블리-헤드-우",
+        "priceExVat": 247000
+      },
+      {
+        "partNumber": "8310138510",
+        "name": "램프 어셈블리-헤드-좌",
+        "priceExVat": 416000
+      },
+      {
+        "partNumber": "8310238510",
+        "name": "램프 어셈블리-헤드-우",
+        "priceExVat": 416000
+      },
+      {
+        "partNumber": "8310138540",
+        "name": "램프 어셈블리-헤드-좌",
+        "priceExVat": 546000
+      },
+      {
+        "partNumber": "8310238540",
+        "name": "램프 어셈블리-헤드-우",
+        "priceExVat": 546000
+      }
+    ]
+  },
+  {
+    "id": "kgm-part-price-cabin-filter",
+    "partId": "cabin-filter",
+    "partName": "에어컨 필터",
+    "reviewed": true,
+    "publisher": "KGM 공식 사이트 · 순정부품 조회",
+    "url": "https://www.kg-mobility.com/sr/service-network/search-parts",
+    "checkedAt": "2026-10-31",
+    "modelCode": "U",
+    "modelName": "렉스턴스포츠",
+    "applicability2023": "미확정 — 공식 조회에서 렉스턴스포츠(U)로 검색된 품번입니다. 연식·생산 시점·옵션별 적용 정보는 제공되지 않아 2023년형 호환을 확정하지 않습니다.",
+    "vatIncluded": false,
+    "laborIncluded": false,
+    "items": [
+      {
+        "partNumber": "6911438000",
+        "name": "필터-에어콘",
+        "priceExVat": 21700
+      },
+      {
+        "partNumber": "09APA0H970",
+        "name": "에어컨 필터-고성능 활성탄",
+        "priceExVat": 25000
+      }
+    ]
+  },
+  {
+    "id": "kgm-part-price-blower",
+    "partId": "blower",
+    "partName": "블로워 모터",
+    "reviewed": true,
+    "publisher": "KGM 공식 사이트 · 순정부품 조회",
+    "url": "https://www.kg-mobility.com/sr/service-network/search-parts",
+    "checkedAt": "2026-10-31",
+    "modelCode": "U",
+    "modelName": "렉스턴스포츠",
+    "applicability2023": "미확정 — 공식 조회에서 렉스턴스포츠(U)로 검색된 품번입니다. 연식·생산 시점·옵션별 적용 정보는 제공되지 않아 2023년형 호환을 확정하지 않습니다.",
+    "vatIncluded": false,
+    "laborIncluded": false,
+    "items": [
+      {
+        "partNumber": "6911336000",
+        "name": "블로어 모터 어셈블리",
+        "priceExVat": 67600
+      }
+    ]
+  },
+  {
+    "id": "kgm-part-price-wiper",
+    "partId": "wiper",
+    "partName": "프런트 와이퍼",
+    "reviewed": true,
+    "publisher": "KGM 공식 사이트 · 순정부품 조회",
+    "url": "https://www.kg-mobility.com/sr/service-network/search-parts",
+    "checkedAt": "2026-10-31",
+    "modelCode": "U",
+    "modelName": "렉스턴스포츠",
+    "applicability2023": "미확정 — 공식 조회에서 렉스턴스포츠(U)로 검색된 품번입니다. 연식·생산 시점·옵션별 적용 정보는 제공되지 않아 2023년형 호환을 확정하지 않습니다.",
+    "vatIncluded": false,
+    "laborIncluded": false,
+    "items": [
+      {
+        "partNumber": "7831536000",
+        "name": "블레이드 어셈블리-윈드실드 와이퍼-좌",
+        "priceExVat": 18900
+      },
+      {
+        "partNumber": "7832536000",
+        "name": "블레이드 어셈블리-윈드실드 와이퍼-우",
+        "priceExVat": 17600
+      },
+      {
+        "partNumber": "8610036000",
+        "name": "모터 어셈블리-프론트 와이퍼",
+        "priceExVat": 55900
+      },
+      {
+        "partNumber": "7821136000",
+        "name": "링키지 어셈블리-윈드실드 와이퍼",
+        "priceExVat": 37000
+      },
+      {
+        "partNumber": "7831136000",
+        "name": "암 어셈블리-윈드실드 와이퍼-좌",
+        "priceExVat": 24500
+      },
+      {
+        "partNumber": "7832136000",
+        "name": "암 어셈블리-윈드실드 와이퍼-우",
+        "priceExVat": 24500
+      }
+    ]
+  }
+]

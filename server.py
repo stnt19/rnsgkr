@@ -6,6 +6,7 @@ from urllib.parse import urlparse, parse_qs
 import maintenance
 import official_info
 import part_matching
+import part_prices
 import question_scope as scope
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -17,10 +18,32 @@ def answer(question, history=None, part_id=None):
     request = previous if followup else question
     if re.search(scope.OFF_TOPIC, question, re.I) or re.search(scope.OFF_TOPIC, request, re.I):
         return scope.refusal('out-of-scope')
+    if re.fullmatch(part_prices.SHORT_PRICE, question) and previous:
+        prior_part = maintenance.infer_part(previous)
+        prior_request = previous
+        if not prior_part:
+            prior_match = part_matching.resolve(previous, maintenance.PARTS)['match']
+            if prior_match:
+                prior_part = prior_match['part']
+                prior_request = prior_match['normalizedQuestion']
+        if prior_part and (scope.supported(prior_part, prior_request) or part_prices.supports(prior_part, prior_request)):
+            names = [prior_part['name']] + prior_part['aliases']
+            found = [n for n in names if re.sub(r'\s+', '', n).lower() in re.sub(r'\s+', '', prior_request).lower()]
+            price_request = re.sub(r'^(그럼|그거|그것|이거)\s*', '', question)
+            request = max(found, key=len, default=prior_part['name']) + ' ' + price_request
+        elif prior_part:
+            return scope.refusal('missing-evidence')
+    if re.fullmatch(part_prices.SHORT_PRICE, question) and not previous and not part_id:
+        return {'answer': '차량 가격인지 부품 가격인지 알려 주세요. 부품 가격은 “와이퍼 모터 가격”처럼 부품명을 함께 입력하면 확인할 수 있습니다.',
+                'sources': [], 'mode': 'scope', 'reason': 'ambiguous-price'}
     part = maintenance.infer_part(request)
     correction = None
     if not part:
         resolved = part_matching.resolve(request, maintenance.PARTS)
+        if not resolved['match'] and not resolved['candidates'] and part_prices.price_question(request):
+            # Suggest incomplete names without changing the actual pricing request.
+            candidate_request = re.sub(part_prices.PRICE, '점검', request)
+            resolved['candidates'] = part_matching.resolve(candidate_request, maintenance.PARTS)['candidates']
         correction = resolved['match']
         if correction:
             part = correction['part']
@@ -37,9 +60,11 @@ def answer(question, history=None, part_id=None):
     if official:
         return official
     if part:
-        if not scope.supported(part, request):
+        result = part_prices.answer(part, request) if part_prices.price_question(request) else None
+        if result is None and not scope.supported(part, request):
             return scope.refusal('missing-evidence')
-        result = maintenance.answer_manual(request, part['id'])
+        if result is None:
+            result = maintenance.answer_manual(request, part['id'])
         if correction:
             result['partMatch'] = {k: correction[k] for k in ('inputName', 'matchedName', 'normalizedQuestion')}
             result['partMatch']['partId'] = part['id']
@@ -92,9 +117,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(404,{'error':'로컬 원본을 찾을 수 없습니다.'})
             return self.send(200,Path(doc['path']).read_bytes(),'application/pdf')
         if path == '/api/status':
-            return self.send(200, {'officialSources':len(official_info.sources())})
+            return self.send(200, {'officialSources':len(official_info.sources()) + len(part_prices.records())})
         if path == '/api/official-sources':
-            return self.send(200, official_info.sources())
+            return self.send(200, official_info.sources() + [part_prices.source(r) for r in part_prices.records()])
         files = {'/':('web/index.html','text/html; charset=utf-8'),'/style.css':('web/style.css','text/css; charset=utf-8'),'/app.js':('web/app.js','text/javascript; charset=utf-8'),'/guides.css':('web/guides.css','text/css; charset=utf-8')}
         if path not in files:
             return self.send(404, {'error':'찾을 수 없습니다.'})

@@ -34,7 +34,7 @@ class ScopeTests(unittest.TestCase):
                 r=answer(q); self.assertEqual(r['reason'],'out-of-scope'); self.assertEqual(r['sources'],[])
 
     def test_unsupported_vehicle_requests_have_no_guide_or_sources(self):
-        for q in ['배터리 가격은?', '배터리 전압 규정값은?', '배터리 수명이 몇 년인가요?', '배터리 점검 후 화성에서 충전하는 방법', '브레이크 고장 진단', '라디에이터에서 이상한 소리가 나요', '배터리와 브레이크 교환 방법', '헤드램프 밝기는 몇 루멘인가요?']:
+        for q in ['배터리 전압 규정값은?', '배터리 수명이 몇 년인가요?', '배터리 점검 후 화성에서 충전하는 방법', '브레이크 고장 진단', '라디에이터에서 이상한 소리가 나요', '배터리와 브레이크 교환 방법', '헤드램프 밝기는 몇 루멘인가요?']:
             with self.subTest(q=q):
                 r=answer(q); self.assertEqual(r['reason'],'missing-evidence'); self.assertEqual(r['sources'],[]); self.assertNotIn('guide',r)
 
@@ -43,10 +43,10 @@ class ScopeTests(unittest.TestCase):
         self.assertEqual(r['reason'],'out-of-scope')
 
     def test_explicit_part_cannot_bypass_evidence_gate(self):
-        self.assertEqual(answer('가격 알려줘',part_id='battery')['reason'],'missing-evidence')
+        self.assertEqual(answer('가격 알려줘',part_id='battery')['partId'],'battery')
 
     def test_unsupported_previous_question_cannot_become_generic_guide(self):
-        r=answer('그럼 더 자세히 알려줘',[{'role':'user','content':'배터리 가격은?'}])
+        r=answer('그럼 더 자세히 알려줘',[{'role':'user','content':'배터리 전압 규정값은?'}])
         self.assertEqual(r['reason'],'missing-evidence')
 
 class OfficialInformationTests(unittest.TestCase):
@@ -68,7 +68,7 @@ class OfficialInformationTests(unittest.TestCase):
         self.assertNotIn('2,594', result['answer'])
 
     def test_unreviewed_prices_do_not_reuse_other_models(self):
-        for q in ['2024년형 렉스턴 스포츠 가격', '현재 렉스턴 스포츠 가격', '2023 렉스턴 스포츠 칸 가격', '2025 렉스턴 스포츠 쿨멘 가격', '렉스턴 스포츠 중고 가격', '렉스턴 스포츠 배터리 가격', '렉스턴 스포츠 가격과 수리비', '2023 렉스턴 스포츠 풀옵션 가격']:
+        for q in ['2024년형 렉스턴 스포츠 가격', '현재 렉스턴 스포츠 가격', '2023 렉스턴 스포츠 칸 가격', '2025 렉스턴 스포츠 쿨멘 가격', '렉스턴 스포츠 중고 가격', '렉스턴 스포츠 가격과 수리비', '2023 렉스턴 스포츠 풀옵션 가격']:
             with self.subTest(q=q):
                 self.assertEqual(answer(q)['sources'], [])
 

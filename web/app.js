@@ -105,9 +105,9 @@ async function init() {
     document.querySelector('.welcome p').textContent='부품 설명·점검 방법과 검토된 제작사 공식 가격 정보를 확인하세요.';
     document.querySelector('.scope-note').textContent='ⓘ 차량 사양과 정비교범의 원문·주의사항을 확인하세요. 증상만으로 고장을 확정하지 않습니다.';
     document.querySelector('#libraryPanel > p').textContent='정비교범과 검토된 제작사 공식 자료입니다. 공식 정보는 출처·확인일·2023년형 해당 여부를 확인하세요. 실시간 검색 결과가 아닙니다.';
-    $('question').placeholder='예: 배터리 점검 방법, 2023년형 렉스턴 스포츠 가격';
+    $('question').placeholder='예: 배터리 점검 방법, 와이퍼 모터 가격';
     $('mode').textContent='교범·공식 자료 기반 안내 · API 키 없이 실행';
-    const examples=[['배터리 점검 방법을 알려 주세요','01 / 충전 계통','배터리 점검 방법'],['에어컨 필터 교환 방법을 알려 주세요','02 / 필터 교환','에어컨 필터 교환'],['헤드램프에 결로가 계속 생겨요','03 / 램프 정비','헤드 램프 결로 확인'],['2023년형 렉스턴 스포츠 가격은?','04 / 공식 가격 정보','2023년형 가격 확인']];
+    const examples=[['배터리 점검 방법을 알려 주세요','01 / 충전 계통','배터리 점검 방법'],['에어컨 필터 교환 방법을 알려 주세요','02 / 필터 교환','에어컨 필터 교환'],['헤드램프에 결로가 계속 생겨요','03 / 램프 정비','헤드 램프 결로 확인'],['와이퍼 모터 가격은?','04 / 공식 가격 정보','와이퍼 모터 가격']];
     document.querySelectorAll('.prompt-grid button').forEach((b,i)=>{b.dataset.question=examples[i][0];b.querySelector('span').textContent=examples[i][1];b.querySelector('strong').textContent=examples[i][2];});
     document.querySelectorAll('.side-prompt').forEach((b,i)=>{const example=examples[i===2?3:i];b.dataset.question=example[0];b.replaceChildren(node('span','↗'));b.prepend(document.createTextNode(example[2]+' '));});
   } catch { $('mode').textContent = '서버 연결을 확인해 주세요.'; }
