@@ -1,4 +1,4 @@
-"""Extract every page; retain wiring as image-only and catalogs as references.
+"""Extract every page; merge validated local wiring OCR and catalog references.
 
 Uses the existing local manifest produced by import_manuals.py. Registry ranges
 are only applied to the exact reviewed PDF fingerprint.
@@ -6,10 +6,13 @@ are only applied to the exact reviewed PDF fingerprint.
 import hashlib
 import json
 import re
+import sys
 from pathlib import Path
 import pypdfium2 as pdfium
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT))
+import wiring_ocr
 
 
 def main():
@@ -21,7 +24,11 @@ def main():
         if fingerprint != doc['sha256']:
             raise ValueError('PDF changed; review registry before importing: '+doc['id'])
         pdf=pdfium.PdfDocument(doc['path'])
+        wiring=wiring_ocr.load_records(ROOT/'data',doc) if doc['id']=='wiring' else []
         doc['scope']='배선도 원문 확인 전용 · 문자 인코딩 문제로 자동 답변 제외' if doc['id']=='wiring' else '부품 구성·품번 원문 참고 · 연식/옵션 호환 자동 확정 제외' if doc['id']=='catalog' else '전체 텍스트 검색 · 상세 정비 안내와 원문 참고 안내 구분'
+        if wiring:
+            doc['scope']=f'배선도 OCR 검색 {len(wiring)}쪽 · 원문 글꼴 대조·검토된 핀 맵 안내 · 연결 관계는 원본 확인'
+            records.extend(wiring)
         for i in range(len(pdf)):
             page=pdf[i]; tp=page.get_textpage()
             text=tp.get_text_range().replace('\r','').replace('\x00','').strip()

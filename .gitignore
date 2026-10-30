@@ -8,6 +8,7 @@ data/manuals.local.json
 data/manual-index.local.json
 data/manual-fulltext.local.json
 data/manual-audit.local.json
+data/wiring-ocr*.local.json
 data/manual-import-report.local.json
 data/manual-cache/
 *.pem

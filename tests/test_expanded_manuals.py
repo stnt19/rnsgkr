@@ -45,10 +45,10 @@ class ExpandedManualTests(unittest.TestCase):
                     self.assertIn('#page=',source['url'])
                     self.assertIn(source['kind'],('manual','catalog'))
 
-    def test_fulltext_coverage_and_wiring_exclusion(self):
+    def test_fulltext_coverage_and_wiring_requires_ocr(self):
         self.assertEqual(sum(m['pages'] for m in maintenance.MANUALS),5728)
         self.assertGreater(len(maintenance.RECORDS),4500)
-        self.assertFalse(any(r['docId']=='wiring' for r in maintenance.RECORDS))
+        self.assertTrue(all(r.get('kind')=='wiring' and r.get('textMethod','').startswith('ocr') for r in maintenance.RECORDS if r['docId']=='wiring'))
         self.assertTrue(any(r['docId']=='catalog' for r in maintenance.RECORDS))
 
     def test_common_vehicle_question_matrix(self):

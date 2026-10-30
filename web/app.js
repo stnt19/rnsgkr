@@ -9,7 +9,7 @@ function panel(library) {
 }
 function showSource(source) {
   $('sourceTitle').textContent = source.kind === 'official' ? `${source.publisher} · ${source.title}` : `${source.document || '정비교범'} · PDF ${source.page}쪽 · ${source.title}`;
-  $('sourceText').textContent = source.kind === 'official' ? `${source.text}\n\n확인일: ${source.checkedAt} (한국 시간)\n2023년형 해당 여부: ${source.applicability2023}` : source.text;
+  $('sourceText').textContent = source.kind === 'official' ? `${source.text}\n\n확인일: ${source.checkedAt} (한국 시간)\n2023년형 해당 여부: ${source.applicability2023}` : (source.kind==='wiring' ? `배선도 OCR · ${source.textMethod==='ocr-glyph-checked'?'원문 글꼴 대조':source.textMethod==='ocr-partial-glyph-check'?'일부 문구 글꼴 대조':'자동 인식'}\n${source.ocrNotice}\n\n` : '')+source.text;
   let image = $('sourceImage');
   if(!image) { image = document.createElement('img'); image.id = 'sourceImage'; image.alt = '출처 원문 페이지'; image.style.cssText = 'width:100%;height:auto;display:block;margin:15px 0'; $('sourceText').after(image); }
   image.hidden = !source.imageUrl;
@@ -64,8 +64,16 @@ function addMessage(role, text, sources = [], notice = null, guide = null) {
   if(sources.length&&!guide) {
     const group = node('div','','sources');
     sources.forEach(s => { const btn = node('button',s.kind === 'official' ? `${s.publisher} · 확인일 ${s.checkedAt} · ${s.title} ↗` : `정비교범 · PDF ${s.page}쪽 · ${s.title} ↗`,'source-chip'); btn.onclick = () => showSource(s); group.append(btn); });
-    if(sources.some(s=>s.kind==='manual')) article.insertBefore(group,article.querySelector('.bubble'));
+    if(sources.some(s=>s.kind==='manual'||s.kind==='wiring')) article.insertBefore(group,article.querySelector('.bubble'));
     else article.append(group);
+  }
+  if(sources.some(s=>s.kind==='wiring')){
+    const originals=node('div','','wiring-originals');
+    sources.filter(s=>s.kind==='wiring').slice(0,3).forEach(s=>{
+      const figure=node('figure'),button=node('button','','guide-image-button');button.setAttribute('aria-label',`배선도 ${s.page}쪽 원본 크게 보기`);
+      const img=node('img');img.src=s.imageUrl;img.alt=`배선도 PDF ${s.page}쪽 원본`;img.loading='lazy';img.style.cssText='width:100%;height:auto;max-height:420px;object-fit:contain';
+      button.onclick=()=>showSource(s);button.append(img);figure.append(button,node('figcaption',`배선도 ${s.page}쪽 · 눌러 원본과 OCR 비교`));originals.append(figure);
+    });article.append(originals);
   }
   if(notice) article.append(node('div',notice,'notice'));
   $('conversation').append(article);
@@ -81,7 +89,7 @@ async function ask(question) {
     const data = await response.json(); if(!response.ok) throw new Error(data.error || '답변 요청에 실패했습니다.');
     pending.remove(); addMessage('assistant',data.answer,data.sources,data.notice,data.guide);
     history.push({role:'user',content:question},{role:'assistant',content:data.answer.slice(0,4000)});
-    $('mode').textContent = data.mode === 'manual' ? (data.presentation === 'manual-reference' ? '교범 원문 검색 · 발췌·페이지 확인' : '교범 기반 정리 안내 · 출처·그림 포함') : data.mode === 'official' ? '제작사 공식 자료 · 출처·확인일·연식 구분' : '검토된 자료 기반 안내';
+    $('mode').textContent = data.mode === 'manual' ? (data.presentation === 'wiring-reference' ? '배선도 OCR · 원본 대조 · 사양 구분' : data.presentation === 'manual-reference' ? '교범 원문 검색 · 발췌·페이지 확인' : '교범 기반 정리 안내 · 출처·그림 포함') : data.mode === 'official' ? '제작사 공식 자료 · 출처·확인일·연식 구분' : '검토된 자료 기반 안내';
   } catch(error) { pending.remove(); addMessage('assistant',`답변을 가져오지 못했습니다. ${error.name === 'TimeoutError' ? '응답 시간이 초과되었습니다.' : error.message} 다시 질문해 주세요.`); }
   finally { busy = false; $('send').disabled = false; $('reset').disabled = false; $('question').focus(); }
 }
@@ -115,7 +123,7 @@ async function init() {
     document.querySelector('.document-strip div > span').textContent=`차량 교범 ${manuals.length}개 · 검색 ${parts.indexedPages.toLocaleString()}쪽 · 부품·시스템 ${parts.parts.length}개`;
     document.querySelector('.welcome p').textContent='부품 설명·점검 방법과 검토된 제작사 공식 가격 정보를 확인하세요.';
     document.querySelector('.scope-note').textContent='ⓘ 차량 사양과 정비교범의 원문·주의사항을 확인하세요. 증상만으로 고장을 확정하지 않습니다.';
-    document.querySelector('#libraryPanel > p').textContent='2023년형 교범 전체 텍스트를 검색합니다. 배선도는 원문 확인 전용입니다. 부품 가격은 PDF 등록 여부와 무관하게 공식 조회하며, 아래 저장된 자료와 각 답변의 확인일·연식 적용 여부를 구분해 확인하세요.';
+    document.querySelector('#libraryPanel > p').textContent='2023년형 교범과 배선도 OCR을 검색합니다. 배선도는 원본 그림을 함께 확인하고 OCR·글꼴 대조·검토된 핀 맵을 구분합니다. 부품 가격은 PDF 등록 여부와 무관하게 공식 조회하며 확인일·연식 적용 여부를 표시합니다.';
     $('question').placeholder='예: 배터리 점검 방법, 와이퍼 모터 가격';
     $('mode').textContent='교범·공식 자료 기반 안내 · API 키 없이 실행';
     const examples=[['배터리 점검 방법을 알려 주세요','01 / 충전 계통','배터리 점검 방법'],['에어컨 필터 교환 방법을 알려 주세요','02 / 필터 교환','에어컨 필터 교환'],['헤드램프에 결로가 계속 생겨요','03 / 램프 정비','헤드 램프 결로 확인'],['와이퍼 모터 가격은?','04 / 공식 가격 정보','와이퍼 모터 가격']];

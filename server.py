@@ -8,6 +8,7 @@ import official_info
 import part_matching
 import part_prices
 import live_prices
+import wiring_ocr
 import question_scope as scope
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -58,6 +59,11 @@ def answer(question, history=None, part_id=None):
         if priced:
             if price_correction:priced['partMatch']={k:price_correction[k] for k in ('inputName','matchedName','normalizedQuestion')}|{'partId':price_part['id']}
             return priced
+    if re.search(wiring_ocr.REQUEST,request,re.I):
+        named_part=maintenance.infer_part(request)
+        if part_id and named_part and named_part['id']!=part_id:
+            return scope.refusal('missing-evidence')
+        return maintenance.answer_wiring(request)
     if not part_id:
         mentioned=maintenance.mentioned_parts(request)
         if len(mentioned)>1 and re.search(r'와|과|및|그리고|,',request):

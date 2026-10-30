@@ -9,6 +9,10 @@
 | manual_search.py | 부품 범위 또는 전체 색인에서 검색하고 출처 발췌 제공 |
 | part_matching.py | 이름 구간만 보정, 불명확한 후보 구분 |
 | service_guides.py | 검토된 13종 상세 안내의 버전·페이지 근거 검사 |
+| wiring_ocr.py | OCR 버전·원본 해시 검사, 글꼴 보정, 검토된 핀 맵과 원문 검색 |
+| scripts/ocr_wiring.py, scripts/ocr_windows.ps1 | Windows 한국어 OCR·페이지별 재개 캐시 |
+| scripts/check_wiring_glyphs.py | 내장·시스템 글꼴의 윤곽 일치 검사, 페이지 밖 숨은 텍스트 제외 |
+| scripts/validate_wiring_ocr.py | 원본 대조 표본 76개 검증 보고서 |
 | live_prices.py | 고정 KGM 공개 API·차종 U·품명/품번 조회·캐시 |
 | part_prices.py | 검토된 저장 가격 및 공통 가격 출처 형식 |
 | official_info.py | 검토된 차량 판매 가격 자료 |
@@ -18,7 +22,7 @@
 
 ## API
 
-- `POST /api/chat`: question, history, 선택적 partId. 응답의 presentation은 `service-guide` 또는 `manual-reference`; 가격은 mode `official`.
+- `POST /api/chat`: question, history, 선택적 partId. 응답의 presentation은 `service-guide`, `manual-reference`, `wiring-reference`; 가격은 mode `official`.
 - `GET /api/parts`: 부품·시스템 목록과 indexedPages.
 - `GET /api/part?id=...`: 해당 부품의 연결 원문과 공통 주의사항.
 - `GET /api/manuals`: 교범 목록·쪽수·가용 여부. 로컬 경로 제외.
@@ -35,3 +39,5 @@
 호출당 6초, 최대 3페이지·페이지당 20개·응답 크기 500KB 제한, 일치 후보 20개 표시, 15분 캐시입니다. 실패 응답은 캐시하지 않습니다. 캐시에는 실제 조회 시각이 유지됩니다. 네트워크 실패/검색 결과 없음은 검토된 저장 가격으로만 대체하며 저장 시점을 명시합니다. 차대번호별 호환, 공임, 배송비, 재고는 조회하지 않습니다.
 
 전체 PDF/로컬 색인은 Git ignore 대상입니다. 테스트는 `python scripts/run_tests.py`로 외부 연결 없이 실행합니다.
+
+배선·회로·핀 맵 요청은 정비 가이드보다 먼저 배선도 검색으로 보냅니다. 가격 요청은 기존 가격 경로를 우선합니다. `wiringReviewed`는 직접 검토한 요약의 사용 여부이며, 출처의 `textMethod`는 OCR/전체 텍스트 글꼴 대조/일부 문구 글꼴 대조를 구분합니다. 전체 텍스트 글꼴 대조도 도면의 연결 관계나 그림 안 숫자 검증을 뜻하지 않습니다. 원문 이미지와 OCR을 출처 모달에서 함께 확인합니다.

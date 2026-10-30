@@ -7,6 +7,7 @@ import threading
 import service_guides
 import question_scope as scope
 import manual_search
+import wiring_ocr
 from functools import lru_cache
 from collections import Counter
 from pathlib import Path
@@ -88,6 +89,13 @@ def answer_reference(question, part=None):
     return {'answer':text,'sources':[source(r) for r in chosen],'mode':'manual',
             'presentation':'manual-reference','partId':part['id'] if part else None,
             'notice':'2023년형 교범 원문 참고 안내입니다. 사양별 차이가 있으며, 검색 결과는 해당 부품의 고장 확정을 뜻하지 않습니다.'}
+
+def answer_wiring(question):
+    result=wiring_ocr.search(question,RECORDS,MANUALS)
+    if not result:return {'answer':'이 질문에 맞는 배선도 OCR 근거를 찾지 못했습니다. 부품명·커넥터 번호를 구체적으로 입력해 주세요. OCR을 아직 가져오지 않았다면 배선도 OCR 색인을 먼저 생성해야 합니다.', 'sources':[],'mode':'scope','reason':'missing-wiring-evidence'}
+    return {'answer':result['answer'],'sources':[source(r) for r in result['records']],
+            'mode':'manual','presentation':'wiring-reference','wiringReviewed':result['reviewed'],
+            'notice':'2023년형 배선도 · '+('원본 그림·표 대조 완료 항목. ' if result['reviewed'] else '')+wiring_ocr.NOTICE}
 
 def answer_manual(question,part_id=None):
     part=find_part(part_id) if part_id else infer_part(question)
